@@ -1,6 +1,12 @@
 const canvas = document.getElementById("game_canvas");
 const ctx = canvas.getContext("2d");
+
+const PHYSICS_HZ = 160;
+const PHYSICS_TICK_MS = 1000 / PHYSICS_HZ;
+
 let audioContext, gainNode;
+let accumulator = 0;
+let previousTime = performance.now();
 let queuedSounds = [];
 
 const sounds = {
@@ -34,6 +40,10 @@ class GameObject {
     constructor(x, y) {
         this.x = x;
         this.y = y;
+        this.createdAt = framecount;
+    }
+    get age() {
+        return framecount - this.createdAt;
     }
 }
 
@@ -48,11 +58,24 @@ class Entity extends GameObject {
         this.h = h;
         this.type = type;
         this.health = 100;
+        this.sounds = [];
         ents.push(this);
     }
     draw() {
         let h = this.autoSize ? this.w * (this.spriteImg.height / this.spriteImg.width) : this.h;
         ctx.drawImage(this.spriteImg, this.x, this.y, this.w, h);
+    }
+    remove() {
+        for (const sound of this.sounds) {
+            sound.stop();
+        }
+        ents.splice(ents.indexOf(this), 1);
+    }
+    setSprite(spr) {
+        if (this.sprite == spr) return;
+        this.sprite = spr;
+        this.spriteImg = new Image();
+        this.spriteImg.src = this.sprite;
     }
 }
 
@@ -78,13 +101,41 @@ class Danny extends Entity {
     constructor() {
         super(0, 0, 20);
         this.type = "DANNY";
-        playSound("dannytrack");
+        this.scaler = 150;
+        this.oldGain = gainNode.gain.value;
+        playSound("dannytrack", this);
     }
     tick() {
-        this.w = Math.abs(Math.sin(framecount / 150) * 150);
-        this.x = ((canvas.clientWidth - this.w) / 2) + Math.sin(framecount / 5) * 10;
-        this.y = ((canvas.clientHeight - this.w) / 2) + + Math.cos(framecount / 10) * 10;
+        this.x = ((canvas.clientWidth - this.w) / 2) + (Math.sin(framecount / 5) * Math.max(0, this.scaler - 145));
+        this.y = ((canvas.clientHeight - this.w) / 2) + Math.cos(framecount / 10) * 10;
         gainNode.gain.value = 0.1 * (this.w / 100);
+        this.w = Math.abs(Math.sin(framecount / 150) * this.scaler);
+        if (this.age > 1000) this.scaler++;
+        if (this.age > 3000) {
+            this.scaler = 150;
+            this.w = canvas.clientWidth;
+            this.autoSize = false;
+            this.h = canvas.clientHeight;
+            this.setSprite("/assets/sprites/sonloaf.png");
+        }
+        if (this.age > 5000) {
+            gainNode.gain.value = this.oldGain;
+            blank = function () {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+            }
+            this.remove();
+        }
+    }
+    draw() {
+        if (this.age == 200) {
+            blank = function () { };
+        }
+        super.draw();
+        if (this.age > 300) {
+            // let a = (this.age - 1200) % 100;
+            /* for (let i = 0; i < a; i++) */ ctx.drawImage(canvas, -1, -1, canvas.clientWidth + 2, canvas.clientHeight + 2);
+        }
     }
 }
 
@@ -111,20 +162,23 @@ async function loadSounds() {
         console.log(`loaded sound ${sound}`, sounds[sound]);
     }
     soundsLoaded = true;
-    for(const sound of queuedSounds) {
-        playSound(sound);
+    for (const sound of queuedSounds) {
+        playSound(sound.sound, sound.sourceEnt);
     }
 }
 
-function playSound(sound) {
+function playSound(sound, sourceEnt) {
     if (!soundsLoaded) {
-        queuedSounds.push(sound);
+        queuedSounds.push({ sound, sourceEnt });
         return console.log(`queueing ${sound} because sounds aren't finished loading yet`);
     }
     const trackSource = audioContext.createBufferSource();
     trackSource.buffer = sounds[sound].file;
     trackSource.connect(gainNode);
     trackSource.start();
+    if (sourceEnt) {
+        sourceEnt.sounds.push(trackSource);
+    }
 }
 
 function renderAll() {
@@ -163,12 +217,23 @@ function processKeys() {
     }
 }
 
-function gameLoop() {
-    framecount++;
-    scaleCanvas();
+function gameLoop(currentTime) {
+    // some physics lag prevention stuff
+    // tl;dr: if a gameLoop takes more than PHYSICS_TICK_MS, it'll tick physics more than once during the frame to keep physics running at a predictable pace.
+    // this also uncouples the physics code from the speed at which the user's monitor refreshes, so John on his shitty 60hz screen won't have a slower game than Joe on his 165hz.
+    let deltaTime = currentTime - previousTime;
+    previousTime = currentTime;
+    accumulator += deltaTime;
+
     blank();
     processKeys();
-    tickAll();
+    
+    while (accumulator >= PHYSICS_TICK_MS) {
+        framecount++;
+        tickAll();
+        accumulator -= PHYSICS_TICK_MS;
+    }
+    
     renderAll();
     window.requestAnimationFrame(gameLoop);
 }
@@ -183,4 +248,5 @@ document.onkeyup = function (e) {
     loadSounds();
 }
 
-gameLoop();
+scaleCanvas();
+window.requestAnimationFrame(gameLoop);
