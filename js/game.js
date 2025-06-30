@@ -81,7 +81,7 @@ class Danny extends Entity {
         playSound("dannytrack");
     }
     tick() {
-        this.w = Math.abs(Math.sin(framecount / 150) * 100);
+        this.w = Math.abs(Math.sin(framecount / 150) * 150);
         this.x = ((canvas.clientWidth - this.w) / 2) + Math.sin(framecount / 5) * 10;
         this.y = ((canvas.clientHeight - this.w) / 2) + + Math.cos(framecount / 10) * 10;
         gainNode.gain.value = 0.1 * (this.w / 100);
