@@ -1,6 +1,7 @@
 const canvas = document.getElementById("game_canvas");
 const ctx = canvas.getContext("2d");
 let audioContext, gainNode;
+let queuedSounds = [];
 
 const sounds = {
     "dannytrack": {
@@ -13,6 +14,7 @@ const keyBinds = {
     "l": {
         fn: _ => {
             new Danny();
+            delete keyBinds["l"];
         }, sf: true
     }
 }
@@ -21,6 +23,7 @@ const keysPressed = new Set();
 
 let ents = [];
 let soundsLoaded = false;
+let soundsLoading = false;
 
 function rect(x, y, w, h, color) {
     ctx.fillStyle = color;
@@ -74,12 +77,14 @@ class SonLoaf extends Item {
 class Danny extends Entity {
     constructor() {
         super(0, 0, 20);
-        playSound("dannytrack", 0.5);
+        this.type = "DANNY";
+        playSound("dannytrack");
     }
     tick() {
-        this.w = Math.abs(Math.sin(framecount / 150)*100);
+        this.w = Math.abs(Math.sin(framecount / 150) * 100);
         this.x = ((canvas.clientWidth - this.w) / 2) + Math.sin(framecount / 5) * 10;
         this.y = ((canvas.clientHeight - this.w) / 2) + + Math.cos(framecount / 10) * 10;
+        gainNode.gain.value = 0.1 * (this.w / 100);
     }
 }
 
@@ -95,8 +100,8 @@ async function getAudioFromFile(filepath) {
 }
 
 async function loadSounds() {
-    if(soundsLoaded) return;
-    soundsLoaded = true;
+    if (soundsLoaded || soundsLoading) return;
+    soundsLoading = true;
     audioContext = new AudioContext();
     gainNode = audioContext.createGain();
     gainNode.connect(audioContext.destination);
@@ -105,10 +110,17 @@ async function loadSounds() {
         sounds[sound].file = await getAudioFromFile(sounds[sound].path);
         console.log(`loaded sound ${sound}`, sounds[sound]);
     }
+    soundsLoaded = true;
+    for(const sound of queuedSounds) {
+        playSound(sound);
+    }
 }
 
 function playSound(sound) {
-    if (!soundsLoaded) return console.log(`tried to play ${sound} but it's not loaded yet!!`);
+    if (!soundsLoaded) {
+        queuedSounds.push(sound);
+        return console.log(`queueing ${sound} because sounds aren't finished loading yet`);
+    }
     const trackSource = audioContext.createBufferSource();
     trackSource.buffer = sounds[sound].file;
     trackSource.connect(gainNode);
@@ -137,10 +149,25 @@ function scaleCanvas() {
     canvas.height = document.body.clientHeight * 0.8;
 }
 
+function processKeys() {
+    /* Object.keys(nL.keyBinds).forEach(k=>{
+        if(nL.keyMap.has(k)) nL.keyBinds[k].fn();
+        if(nL.keyBinds[k].sf) nL.keyMap.delete(k);
+    })
+     */
+    for (const k of Object.keys(keyBinds)) {
+        if (keysPressed.has(k)) {
+            if (keyBinds[k].sf) keysPressed.delete(k);
+            keyBinds[k].fn();
+        }
+    }
+}
+
 function gameLoop() {
     framecount++;
     scaleCanvas();
     blank();
+    processKeys();
     tickAll();
     renderAll();
     window.requestAnimationFrame(gameLoop);
