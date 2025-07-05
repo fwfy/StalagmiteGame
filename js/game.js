@@ -9,7 +9,21 @@ let audioContext, gainNode;
 let accumulator = 0;
 let previousTime = performance.now();
 let queuedSounds = [];
+let soundsPlaying = [];
+let started = false;
+let bgImg = new Image();
+let camera = {
+    x: 0,
+    y: 0
+}
+let bounds = {
+    x: 0,
+    y: 0,
+    w: 100,
+    h: 100
+}
 let activeMenu;
+let activeLevel;
 let player;
 let cutscene;
 
@@ -28,6 +42,15 @@ let sounds = {
     "jump": {
         type: "sfx",
         path: "assets/sfx/jump.mp3"
+    },
+    "ooeeoo": {
+        type: "music",
+        path: "assets/music/miku_miku_oo_ee_oo.mp3"
+    },
+    "title": {
+        type: "music",
+        path: "assets/music/title.mp3",
+        loop: true
     }
 }
 
@@ -41,14 +64,22 @@ const keyBinds = {
     "arrowup": {
         fn: _ => {
             if (activeMenu) {
+                if (debugging) keyBinds["arrowup"].sf = true;
                 if (activeMenu.nav) activeMenu.nav(-1);
+            } else if (debugging) {
+                keyBinds["arrowup"].sf = false;
+                camera.y--;
             }
         }, sf: true
     },
     "arrowdown": {
         fn: _ => {
             if (activeMenu) {
+                if (debugging) keyBinds["arrowup"].sf = true;
                 if (activeMenu.nav) activeMenu.nav(1);
+            } else if (debugging) {
+                keyBinds["arrowdown"].sf = false;
+                camera.y++;
             }
         }, sf: true
     },
@@ -68,7 +99,22 @@ const keyBinds = {
     },
     "v": {
         fn: _ => {
-            new SonLoaf(player.x+60, player.y);
+            if (!debugging) return;
+            new SonLoaf(player.x + 60, player.y);
+        }, sf: true
+    },
+    "m": {
+        fn: _ => {
+            if (!debugging) return;
+            new Miku();
+            playSound("ooeeoo");
+        }, sf: true
+    },
+    "t": {
+        fn: _ => {
+            for (const sound of soundsPlaying) {
+                sound.stop();
+            }
         }, sf: true
     },
     " ": {
@@ -98,6 +144,16 @@ const keyBinds = {
                 player.xv += 0.20;
             }
         }
+    },
+    "arrowleft": {
+        fn: _ => {
+            if (debugging) camera.x--;
+        }
+    },
+    "arrowright": {
+        fn: _ => {
+            if (debugging) camera.x++;
+        }
     }
 }
 
@@ -114,10 +170,17 @@ function rect(x, y, w, h, color) {
 
 const MAIN_MENU_LAYOUT = {
     "title": "Stalagmite Game",
+    "title_img": "assets/other/title.png",
+    "title_animation": e => { return Math.max(1, 50 + (5 * Math.sin(e / 90))) },
     "defaultOption": "Begin Game",
     "options": {
         "Begin Game": _ => {
+            for (const sound of soundsPlaying) {
+                sound.stop();
+            }
+            queuedSounds = [];
             activeMenu.dismiss();
+            new Level();
             new Player();
         }
     }
@@ -149,6 +212,14 @@ class Menu {
         activeMenu = this;
         this.selected = 0;
         this.selectedFn = this.layout.options[this.layout.defaultOption];
+        if (this.layout.title_img) {
+            this.title_img = new Image();
+            this.title_img.src = this.layout.title_img;
+            this.title_img.onload = _ => this.titleImgLoaded();
+        }
+    }
+    titleImgLoaded() {
+        this.title_img_ratio = this.title_img.width / this.title_img.height;
     }
     dismiss() {
         this.active = false;
@@ -158,7 +229,12 @@ class Menu {
         if (!this.active) return;
         let center_x = canvas.width / 2;
         let height = canvas.height;
-        text(center_x, height * 0.3, this.layout.title, "white", 50, true);
+        let scale = this.layout.title_animation ? this.layout.title_animation(framecount) : 50;
+        if (this.title_img) {
+            ctx.drawImage(this.title_img, center_x - (scale * this.title_img_ratio / 2), height * 0.3, scale * this.title_img_ratio, scale);
+        } else {
+            text(center_x, height * 0.3, this.layout.title, "white", scale, true);
+        }
         let pos = 1;
         for (const btn of Object.keys(this.layout.options)) {
             pos++;
@@ -216,18 +292,21 @@ class Entity extends GameObject {
         this.xv = 0;
         this.yv = 0;
         this.type = type;
+        this._kill = false; // if this is true then the engine will discard the entity on the next frame
         this.health = 100;
         this.sounds = [];
+        this.ignoreCamOffset = false;
         ents.push(this);
     }
     draw() {
-        ctx.drawImage(this.spriteImg, this.x, this.y, this.w, this.h);
+        let { x, y } = this.ignoreCamOffset ? { x: this.x, y: this.y } : camOffset(this.x, this.y);
+        ctx.drawImage(this.spriteImg, x, y, this.w, this.h);
     }
     remove() {
         for (const sound of this.sounds) {
             sound.stop();
         }
-        ents.splice(ents.indexOf(this), 1);
+        this._kill = true;
     }
     setSprite(spr) {
         if (this.sprite == spr) return;
@@ -239,18 +318,18 @@ class Entity extends GameObject {
     tick() {
         this.x += this.xv;
         this.y += this.yv;
-        if (this.x < 0) {
+        if (this.x < bounds.x) {
             this.x = 0;
             this.xv = 0;
-        } else if (this.x + this.w > canvas.width) {
-            this.x = canvas.width - this.w;
+        } else if (this.x + this.w > bounds.w) {
+            this.x = bounds.w - this.w;
             this.xv = 0;
         }
-        if (this.y == 0) {
+        if (this.y < bounds.y) {
             this.y = 0;
             this.yv = 0;
-        } else if (this.y + this.h > canvas.height) {
-            this.y = canvas.height - this.h;
+        } else if (this.y + this.h > bounds.h) {
+            this.y = bounds.h - this.h;
             this.yv = 0;
         }
         this.yv += 0.25;
@@ -264,31 +343,26 @@ class Entity extends GameObject {
             this.y + this.h > ent.y;
     }
     isInBounds() {
-        return this.isCollidingWith({
-            x: 0,
-            y: 0,
-            w: canvas.width,
-            h: canvas.height
-        });
+        return this.isCollidingWith(bounds);
     }
     playSound(name) {
         playSound(name, this);
     }
     sprLoaded() {
         console.log("sprLoaded");
-        if(this.autoSize) {
+        if (this.autoSize) {
             this._h = this._w * (this.spriteImg.height / this.spriteImg.width);
         }
     }
     set w(val) {
         this._w = val;
-        if(this.autoSize) {
+        if (this.autoSize) {
             this._h = this._w * (this.spriteImg.height / this.spriteImg.width);
         }
     }
     set h(val) {
         this._h = val;
-        if(!!val) this.autoSize = false;
+        if (!!val) this.autoSize = false;
     }
     get w() {
         return this._w;
@@ -300,37 +374,81 @@ class Entity extends GameObject {
 
 class Player extends Entity {
     constructor() {
-        super(canvas.width / 2, canvas.height / 2, 30, null, "assets/sprites/player.png", "player");
+        super(canvas.width / 2, canvas.height / 2, 50, null, "assets/sprites/player.png", "player");
         player = this;
         this.trollText = new Image();
         this.trollText.src = "assets/sprites/itsut.png";
         this.ttxo = 0;
         this.ttyo = 0;
+        this.jumpState = 0;
+        this.ignoreCamOffset = false;
+        this.onGround = false;
     }
     draw() {
+        moveCamTo(this.x, this.y);
         super.draw();
+        // console.log(this.x, this.y, camera.x, camera.y);
         if (this.age < 1000 && this.age > 10) {
             if (Math.random() < 0.1) {
                 this.ttxo = ((Math.random() * 5) - 2.5);
                 this.ttyo = ((Math.random() * 5) - 2.5);
             }
-            let x = (this.x - 200) + this.ttxo;
-            let y = (this.y - 100) + this.ttyo;
+            let { x: xO, y: yO } = camOffset(this.x, this.y);
+            let x = (this.x - 200) + this.ttxo + xO;
+            let y = (this.y - 100) + this.ttyo + yO;
             ctx.drawImage(this.trollText, x, y);
         }
     }
     jump() {
-        let onGround = this.y == (canvas.height - this.h);
-        if(onGround) {
-            player.yv = -10;
+        if (this.onGround) {
+            this.y--;
+            this.jumpState = 1;
+            this.yv = -10;
             this.playSound("jump");
+        } else if (!this.onGround && this.jumpState == 1) {
+            this.xv *= 2.5;
+            this.yv = -8;
+            this.jumpState = 2;
         }
     }
     tick() {
+        if (!activeLevel) return;
         super.tick();
-        for(const ent of ents) {
-            if(ent.isItem && this.isCollidingWith(ent)) {
+        let safe = false;
+        let propsBelow, propsAt;
+        while (!safe) {
+            propsBelow = activeLevel.getProps(this.x + this.w / 2, this.y + this.h + 1);
+            propsAt = activeLevel.getProps(this.x + this.w / 2, this.y + this.h);
+            safe = true;
+            if (propsBelow.collision && this.yv >= 0) {
+                this.yv = 0;
+                if (propsAt.collision) {
+                    this.y--;
+                    safe = false;
+                }
+            }
+        }
+        this.onGround = propsBelow.collision || this.y == (bounds.h - this.h);
+        if (this.onGround) this.jumpState = 0;
+        for (const ent of ents.filter(e => e.isItem)) {
+            if (this.isCollidingWith(ent)) {
                 ent.action(this);
+            }
+        }
+        if(debugging) {
+            let dbgInfo = {
+                onGround: this.onGround,
+                jumpState: this.jumpState,
+                safe: safe
+            }
+            let i = 0;
+            for (const prop of Object.keys(propsBelow)) {
+                text(0, 50 + (15 * i), `${prop}: ${propsBelow[prop]}`, "red", 15, false);
+                i++;
+            }
+            for(const prop of Object.keys(dbgInfo)) {
+                text(0, 50 + (15 * i), `${prop}: ${dbgInfo[prop]}`, "cyan", 15, false);
+                i++;
             }
         }
     }
@@ -358,11 +476,23 @@ class SonLoaf extends Item {
     }
 }
 
+class Miku extends Item {
+    constructor() {
+        super(Math.random() * canvas.width, 10, "assets/sprites/miku.webp", "miku");
+    }
+    action(ent) {
+        new Miku();
+        new Miku();
+        playSound("ooeeoo");
+        this.remove();
+    }
+}
+
 // const ball = new Item(1, 2)
 
 class Danny extends Entity {
     constructor() {
-        super(0, 0, 20);
+        super(10, 10, 20);
         this.type = "DANNY";
         this.scaler = 150;
         this.oldGain = gainNode.gain.value;
@@ -405,8 +535,46 @@ class Danny extends Entity {
     }
 }
 
-let sqX = 0;
-let sqY = 0;
+class Level {
+    constructor(name = "test") {
+        this.name = name;
+        this.levelBg = new Image();
+        this.levelBg.src = `assets/levels/${name}/level.png`;
+        this.levelBg.onload = _ => {
+            this.levelBgLoaded();
+        }
+        this.propmapImg = new Image();
+        this.propmapImg.src = `assets/levels/${name}/propmap.png`;
+        this.propmapImg.onload = _ => {
+            this.propmapLoaded();
+        }
+        this.propmapCanvas = document.createElement("canvas");
+        this.propmapCtx = this.propmapCanvas.getContext("2d");
+    }
+    levelBgLoaded() {
+        bgImg = this.levelBg;
+        console.log("levelbg is loaded");
+    }
+    propmapLoaded() {
+        this.propmapCanvas.width = this.propmapImg.width;
+        this.propmapCanvas.height = this.propmapImg.height;
+        this.propmapCtx.drawImage(this.propmapImg, 0, 0);
+        this.propmap = this.propmapCtx.getImageData(0, 0, this.propmapImg.width, this.propmapImg.height).data;
+        console.log("propmap is loaded");
+        activeLevel = this;
+    }
+    getProps(x, y) {
+        const index = (y * this.propmapImg.width + x) * 4;
+        return {
+            collision: this.propmap[index] == 255 || typeof this.propmap[index] == "undefined",
+            conditionalCollision: this.propmap[index] == 255 && this.propmap[index + 1] == 255,
+            rawR: this.propmap[index],
+            rawG: this.propmap[index + 1],
+            rawB: this.propmap[index + 2]
+        }
+    }
+}
+
 let framecount = 0;
 
 async function getAudioFromFile(filepath) {
@@ -414,6 +582,10 @@ async function getAudioFromFile(filepath) {
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     return audioBuffer;
+}
+
+function camOffset(x, y) {
+    return { x: x - camera.x + canvas.width / 2, y: y - camera.y + canvas.height / 2 };
 }
 
 function text(x, y, text, color, size, center = true) {
@@ -426,24 +598,33 @@ function text(x, y, text, color, size, center = true) {
 
 async function loadSounds() {
     if (soundsLoaded || soundsLoading) return;
+    let soundPromises = [];
     soundsLoading = true;
     audioContext = new AudioContext();
     gainNode = audioContext.createGain();
     gainNode.connect(audioContext.destination);
     gainNode.gain.value = 0.1;
     for (const sound of Object.keys(sounds)) {
-        sounds[sound].file = await getAudioFromFile(sounds[sound].path);
-        console.log(`loaded sound ${sound}`, sounds[sound]);
+        soundPromises.push(getAudioFromFile(sounds[sound].path).then(data => {
+            sounds[sound].file = data;
+            sounds[sound].loaded = true;
+            for (const queued of queuedSounds) {
+                if (queued.sound != sound) continue;
+                console.log(queued, sound);
+                console.log(`playing queued sound ${queued.sound}`);
+                playSound(queued.sound, queued.sourceEnt);
+            }
+        }));
+        console.log(`began loading sound ${sound}`);
     }
+    await Promise.all(soundPromises);
+    console.log(`finished loading all sounds`);
     soundsLoaded = true;
-    for (const sound of queuedSounds) {
-        playSound(sound.sound, sound.sourceEnt);
-    }
     soundsLoading = false;
 }
 
 function playSound(sound, sourceEnt) {
-    if (!soundsLoaded) {
+    if (!sounds[sound]?.loaded) {
         queuedSounds.push({ sound, sourceEnt });
         return console.log(`queueing ${sound} because sounds aren't finished loading yet`);
     }
@@ -451,6 +632,8 @@ function playSound(sound, sourceEnt) {
     trackSource.buffer = sounds[sound].file;
     trackSource.connect(gainNode);
     trackSource.start();
+    trackSource.loop = !!sounds[sound].loop;
+    soundsPlaying.push(trackSource);
     if (sourceEnt) {
         sourceEnt.sounds.push(trackSource);
     }
@@ -472,6 +655,26 @@ function blank() {
     ctx.globalAlpha = 1;
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (bgImg.width > 0 && !activeMenu) {
+        let { x, y } = camOffset(0, 0);
+        ctx.drawImage(bgImg, x, y);
+        if (debugging) {
+            let { x: boundX, y: boundY } = camOffset(bounds.x, bounds.y);
+            ctx.strokeStyle = "red";
+            ctx.strokeRect(boundX, boundY, bounds.w, bounds.h);
+        }
+        bounds.x = 0;
+        bounds.y = 0;
+        bounds.w = bgImg.width;
+        bounds.h = bgImg.height;
+    }
+}
+
+function moveCamTo(targetX, targetY) {
+    let halfW = canvas.width / 2;
+    let halfH = canvas.height / 2;
+    camera.x = Math.max(halfW, Math.min(bgImg.width - halfW, targetX));
+    camera.y = Math.max(halfH, Math.min(bgImg.height - halfH, targetY));
 }
 
 function scaleCanvas() {
@@ -487,8 +690,8 @@ function processKeys() {
      */
     for (const k of Object.keys(keyBinds)) {
         if (keysPressed.has(k)) {
-            if (keyBinds[k].sf) keysPressed.delete(k);
             keyBinds[k].fn();
+            if (keyBinds[k]?.sf) keysPressed.delete(k);
         }
     }
 }
@@ -501,6 +704,8 @@ function gameLoop(currentTime) {
     previousTime = currentTime;
     accumulator += deltaTime;
 
+    ents = ents.filter(e => !e._kill); // remove all entities marked for deletion
+
     blank();
 
     if (cutscene) {
@@ -508,6 +713,7 @@ function gameLoop(currentTime) {
         processKeys();
     } else if (activeMenu) {
         if (activeMenu.draw) activeMenu.draw();
+        framecount++;
         processKeys();
         accumulator = 0;
     } else {
@@ -532,20 +738,35 @@ function gameLoop(currentTime) {
     window.requestAnimationFrame(gameLoop);
 }
 
-document.onkeydown = function (e) {
-    keysPressed.add(e.key.toLowerCase());
-    console.log(e.key);
-    loadSounds();
+function startGameOnKeypress() {
+    if (started) return;
+    started = true;
+    window.requestAnimationFrame(gameLoop);
 }
 
-document.onkeyup = function (e) {
-    keysPressed.delete(e.key.toLowerCase());
+document.addEventListener("keydown", function (e) {
+    startGameOnKeypress();
+    console.log(e.key);
+    keysPressed.add(e.key.toLowerCase());
     loadSounds();
-}
+});
+
+document.addEventListener("keyup", function (e) {
+    keysPressed.delete(e.key.toLowerCase());
+    startGameOnKeypress();
+    loadSounds();
+});
+
+document.addEventListener("mousedown", function (e) {
+    loadSounds();
+    startGameOnKeypress();
+});
 
 // scaleCanvas();
 canvas.width = 1500;
 canvas.height = 800;
-// new Menu(MAIN_MENU_LAYOUT);
-new Player();
-window.requestAnimationFrame(gameLoop);
+new Menu(MAIN_MENU_LAYOUT);
+
+playSound("title");
+blank();
+text(canvas.width / 2, canvas.height / 2, "Press any key to start...", "white", 60, true);
