@@ -24,8 +24,15 @@ let bounds = {
 }
 let activeMenu;
 let activeLevel;
+let activeCutscene;
 let player;
-let cutscene;
+
+const LEVEL_SEQUENCE = [
+    "test",
+    "test2"
+];
+
+let curr_level = 0;
 
 const MAN = new Image();
 MAN.src = "assets/sprites/wtkim.jpg";
@@ -57,6 +64,7 @@ let sounds = {
 const keyBinds = {
     "l": {
         fn: _ => {
+            if (!debugging) return;
             new Danny();
             delete keyBinds["l"];
         }, sf: true
@@ -117,6 +125,12 @@ const keyBinds = {
             }
         }, sf: true
     },
+    "c": {
+        fn: _ => {
+            if (!debugging) return;
+            new Cutscene(TEST_CUTSCENE);
+        }, sf: true
+    },
     " ": {
         fn: _ => {
             if (player) {
@@ -144,6 +158,11 @@ const keyBinds = {
                 player.xv += 0.20;
             }
         }
+    },
+    "z": {
+        fn: _ => {
+            debugger;
+        }, sf: true
     },
     "arrowleft": {
         fn: _ => {
@@ -181,7 +200,6 @@ const MAIN_MENU_LAYOUT = {
             queuedSounds = [];
             activeMenu.dismiss();
             new Level();
-            new Player();
         }
     }
 }
@@ -192,16 +210,52 @@ async function mantime() {
     eval(atob("YXN5bmMgZnVuY3Rpb24gbSgpIHtpZighd2luZG93LmhoaGgpIHsgcmV0dXJuIGNvbnNvbGUubG9nKCJOYXVnaHR5IGxpdHRsZSBib3kuLi4gVGhhdCdzIG5vdCBob3cgdGhpcyB3b3Jrcy4gS2VlcCBkaWdnaW5nISIpIH1hY3RpdmVNZW51LmRpc21pc3MoKTsKICAgIGFjdGl2ZU1lbnUgPSB0cnVlOwogICAgd2luZG93Lnd0a2ltX3RpbWUgPSAxMDAwOwoJCXdpbmRvdy53dGtpbV9hY3RpdmF0ZWQgPSB0cnVlOwogICAgd2luZG93Lm9sZEJsYW5rID0gYmxhbms7CiAgICBhd2FpdCBuZXcgUHJvbWlzZShyZXNvbHZlID0+IHsKICAgICAgICBmdW5jdGlvbiB3YWl0KCkgewogICAgICAgICAgICBpZiAoc291bmRzTG9hZGluZyB8fCAhc291bmRzTG9hZGVkKSB7CiAgICAgICAgICAgICAgICBzZXRUaW1lb3V0KHdhaXQsIDEwKTsKICAgICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgICAgIHJlc29sdmUoKTsKICAgICAgICAgICAgfQogICAgICAgIH0KICAgICAgICB3YWl0KCk7CiAgICB9KSAvLyB3ZSBhd2FpdAogICAgc291bmRzTG9hZGVkID0gZmFsc2U7CiAgICBzb3VuZHNbInd0a2ltIl0gPSB7CiAgICAgICAgdHlwZTogIj8/PyIsCiAgICAgICAgcGF0aDogImFzc2V0cy9tdXNpYy93dGtpbS5tcDMiCiAgICB9CiAgICBhd2FpdCBsb2FkU291bmRzKCk7CiAgICBwbGF5U291bmQoInd0a2ltIik7CiAgICBibGFuayA9IF8gPT4gewogICAgICAgIGN0eC5nbG9iYWxBbHBoYSA9IDAuMDU7CiAgICAgICAgY3R4LmZpbGxTdHlsZSA9ICJibGFjayI7CiAgICAgICAgY3R4LmZpbGxSZWN0KDAsIDAsIGNhbnZhcy5jbGllbnRXaWR0aCwgY2FudmFzLmNsaWVudEhlaWdodCk7CiAgICAgICAgY3R4Lmdsb2JhbEFscGhhID0gMTsKICAgICAgICBjdHguZHJhd0ltYWdlKGNhbnZhcywgLTUsIC01LCBjYW52YXMuY2xpZW50V2lkdGgrMTAsIGNhbnZhcy5jbGllbnRIZWlnaHQrMTApCiAgICAgICAgY3R4Lmdsb2JhbEFscGhhID0gTWF0aC5tYXgoMCwgd3RraW1fdGltZS0tIC8gMTAwMCk7CiAgICAgICAgY3R4LmRyYXdJbWFnZShNQU4sIDUwLCA1MCwgY2FudmFzLmNsaWVudFdpZHRoLTEwMCwgY2FudmFzLmNsaWVudEhlaWdodC0xMDApOwogICAgICAgIGlmICh3dGtpbV90aW1lIDw9IC0yNTApIHsKICAgICAgICAgICAgZGVsZXRlIE1BSU5fTUVOVV9MQVlPVVQub3B0aW9uc1siPz8/Pz8/Pz8/Pz8/Pz8iXTsKICAgICAgICAgICAgbmV3IE1lbnUoTUFJTl9NRU5VX0xBWU9VVCk7CiAgICAgICAgICAgIGN0eC5nbG9iYWxBbHBoYSA9IDE7CiAgICAgICAgICAgIGJsYW5rID0gd2luZG93Lm9sZEJsYW5rOwogICAgICAgICAgICBjb25zb2xlLmxvZygiTWFuIHRpbWUgaXMgb3ZlciIpOwogICAgICAgIH0KICAgIH19bSgp"));
 }
 
+const TEST_CUTSCENE = [
+    {
+        duration: 1000,
+        func: _ => {
+            camera.x += 2;
+        }
+    },
+    {
+        duration: 500,
+    },
+    {
+        duration: 800,
+        func: _ => {
+            camera.x *= 0.99;
+        },
+        canProceedWhen: _ => camera.x <= player.x
+    }
+]
+
 class Cutscene {
-    constructor() {
-        cutscene = this;
-        this.nextDuration = 1000;
+    constructor(script) {
+        activeCutscene = this;
+        this.script = script;
+        this.pos = 0;
+        this.counter = 0;
     }
     draw() {
-        // TODO: impl
+        let instruction = this.script[this.pos];
+        if (instruction.func) instruction.func(this.counter);
+        this.counter++;
+        if (instruction.canProceedWhen) {
+            if (instruction.canProceedWhen(this.counter)) {
+                this.pos++;
+                this.counter = 0;
+            }
+        } else if (this.counter > instruction.duration) {
+            this.pos++;
+            this.counter = 0;
+        }
+        if (this.pos > this.script.length - 1) {
+            this.end();
+        }
     }
     end() {
-        cutscene = false;
+        activeCutscene = false;
+        debugger;
     }
 }
 
@@ -315,26 +369,104 @@ class Entity extends GameObject {
         this.spriteImg.src = this.sprite;
         this.spriteImg.addEventListener("load", _ => this.sprLoaded());
     }
+    get coX() {
+        return this.x + this.w / 2;
+    }
+    get coY() {
+        return this.y + this.h;
+    }
     tick() {
-        this.x += this.xv;
-        this.y += this.yv;
+        // bounds
         if (this.x < bounds.x) {
-            this.x = 0;
+            this.x = bounds.x;
             this.xv = 0;
-        } else if (this.x + this.w > bounds.w) {
-            this.x = bounds.w - this.w;
+        } else if (this.x + this.w > bounds.x + bounds.w) {
+            this.x = bounds.x + bounds.w - this.w;
             this.xv = 0;
         }
         if (this.y < bounds.y) {
-            this.y = 0;
+            this.y = bounds.y;
             this.yv = 0;
-        } else if (this.y + this.h > bounds.h) {
-            this.y = bounds.h - this.h;
+        } else if (this.y + this.h > bounds.y + bounds.h) {
+            this.y = bounds.y + bounds.h - this.h;
             this.yv = 0;
         }
+
+        // gravity + friction
         this.yv += 0.25;
-        this.yv *= 0.95;
-        this.xv *= 0.95;
+        this.yv *= 0.97;
+        this.xv *= 0.97;
+
+        if (Math.abs(this.xv) < 0.05) this.xv = 0;
+        if (Math.abs(this.yv) < 0.05) this.yv = 0;
+
+        // ceiling collisions
+        if (this.yv < 0) {
+            const headProps = activeLevel.getProps(this.coX, this.y);
+            if (headProps.collision) {
+                this.yv = 0;
+            }
+        }
+
+        // right & left collisions
+        if (this.xv > 0) {
+            const rightProps = activeLevel.getProps(this.x + this.w, this.y + (this.h / 2));
+            if (rightProps.collision) {
+                this.xv = 0;
+            }
+        } else if (this.xv < 0) {
+            const leftProps = activeLevel.getProps(this.x, this.y + (this.h / 2));
+            if (leftProps.collision) {
+                this.xv = 0;
+            }
+        }
+
+        // collision resolution (limited to 5 attempts)
+        let attempts = 0;
+        while (attempts++ < 5) {
+            this.propsBelow = activeLevel.getProps(this.coX, this.coY + 1);
+            this.propsAt = activeLevel.getProps(this.coX, this.coY);
+
+            if (this.propsBelow.slope) {
+                let slopeAttempts = 0;
+                while (slopeAttempts++ < 10) {
+                    let slopeProps = activeLevel.getProps(this.coX, this.coY - slopeAttempts);
+                    if (slopeProps.slope) {
+                        this.y--;
+                    } else {
+                        break;
+                    }
+                }
+                this.y++;
+                attempts = 10;
+                continue;
+            } else {
+                const checkX = this.coX + this.xv * 3;
+                const checkY = this.coY + this.yv * 3;
+
+                const checkXProps = activeLevel.getProps(checkX, this.coY);
+                const checkYProps = activeLevel.getProps(this.coX, checkY);
+
+                if (checkXProps.collision && !checkXProps.slope) {
+                    this.xv = 0;
+                }
+                if (checkYProps.collision && Math.abs(this.yv) > 1 && !checkYProps.slope) {
+                    this.yv = 0;
+                }
+            }
+
+            if (this.propsBelow.collision && this.yv >= 0 && !this.propsBelow.slope) {
+                this.yv = 0;
+                if (this.propsAt.collision) {
+                    this.y--;
+                    continue;
+                }
+            }
+            break;
+        }
+        this.onGround = activeLevel.getProps(this.coX, this.coY + 1).collision || this.coY + 1 >= bounds.h;
+        this.x += this.xv;
+        this.y += this.yv;
     }
     isCollidingWith(ent) {
         return this.x < ent.x + ent.w &&
@@ -374,82 +506,57 @@ class Entity extends GameObject {
 
 class Player extends Entity {
     constructor() {
-        super(canvas.width / 2, canvas.height / 2, 50, null, "assets/sprites/player.png", "player");
+        super(canvas.width / 2, canvas.height / 2, 50, null, "assets/sprites/stalagmite.png", "player");
         player = this;
-        this.trollText = new Image();
-        this.trollText.src = "assets/sprites/itsut.png";
-        this.ttxo = 0;
-        this.ttyo = 0;
         this.jumpState = 0;
         this.ignoreCamOffset = false;
         this.onGround = false;
     }
     draw() {
-        moveCamTo(this.x, this.y);
+        if (!activeCutscene) moveCamTo(this.x, this.y);
         super.draw();
-        // console.log(this.x, this.y, camera.x, camera.y);
-        if (this.age < 1000 && this.age > 10) {
-            if (Math.random() < 0.1) {
-                this.ttxo = ((Math.random() * 5) - 2.5);
-                this.ttyo = ((Math.random() * 5) - 2.5);
-            }
-            let { x: xO, y: yO } = camOffset(this.x, this.y);
-            let x = (this.x - 200) + this.ttxo + xO;
-            let y = (this.y - 100) + this.ttyo + yO;
-            ctx.drawImage(this.trollText, x, y);
-        }
     }
     jump() {
         if (this.onGround) {
             this.y--;
             this.jumpState = 1;
-            this.yv = -10;
+            this.yv = -15;
             this.playSound("jump");
         } else if (!this.onGround && this.jumpState == 1) {
             this.xv *= 2.5;
-            this.yv = -8;
+            this.yv = -15;
             this.jumpState = 2;
         }
     }
     tick() {
         if (!activeLevel) return;
         super.tick();
-        let safe = false;
-        let propsBelow, propsAt;
-        while (!safe) {
-            propsBelow = activeLevel.getProps(this.x + this.w / 2, this.y + this.h + 1);
-            propsAt = activeLevel.getProps(this.x + this.w / 2, this.y + this.h);
-            safe = true;
-            if (propsBelow.collision && this.yv >= 0) {
-                this.yv = 0;
-                if (propsAt.collision) {
-                    this.y--;
-                    safe = false;
-                }
-            }
-        }
-        this.onGround = propsBelow.collision || this.y == (bounds.h - this.h);
         if (this.onGround) this.jumpState = 0;
         for (const ent of ents.filter(e => e.isItem)) {
             if (this.isCollidingWith(ent)) {
                 ent.action(this);
             }
         }
-        if(debugging) {
+        if (debugging) {
             let dbgInfo = {
                 onGround: this.onGround,
                 jumpState: this.jumpState,
-                safe: safe
+                xv: this.xv,
+                yv: this.yv
             }
             let i = 0;
-            for (const prop of Object.keys(propsBelow)) {
-                text(0, 50 + (15 * i), `${prop}: ${propsBelow[prop]}`, "red", 15, false);
+            for (const prop of Object.keys(this.propsBelow)) {
+                text(0, 50 + (15 * i), `${prop}: ${this.propsBelow[prop]}`, "red", 15, false);
                 i++;
             }
-            for(const prop of Object.keys(dbgInfo)) {
+            for (const prop of Object.keys(dbgInfo)) {
                 text(0, 50 + (15 * i), `${prop}: ${dbgInfo[prop]}`, "cyan", 15, false);
                 i++;
             }
+        }
+        if (this.propsAt.goal) {
+            activeLevel.next();
+            this.remove();
         }
     }
 }
@@ -483,7 +590,7 @@ class Miku extends Item {
     action(ent) {
         new Miku();
         new Miku();
-        playSound("ooeeoo");
+        // playSound("ooeeoo");
         this.remove();
     }
 }
@@ -538,40 +645,82 @@ class Danny extends Entity {
 class Level {
     constructor(name = "test") {
         this.name = name;
+        this._levelBgReady = false;
+        this._propmapReady = false;
         this.levelBg = new Image();
         this.levelBg.src = `assets/levels/${name}/level.png`;
-        this.levelBg.onload = _ => {
-            this.levelBgLoaded();
-        }
+        this.levelBg.onload = _ => this.levelBgLoaded();
         this.propmapImg = new Image();
         this.propmapImg.src = `assets/levels/${name}/propmap.png`;
-        this.propmapImg.onload = _ => {
-            this.propmapLoaded();
-        }
+        this.propmapImg.onload = _ => this.propmapLoaded();
         this.propmapCanvas = document.createElement("canvas");
         this.propmapCtx = this.propmapCanvas.getContext("2d");
+        this.originX = 0;
+        this.originY = 0;
     }
     levelBgLoaded() {
         bgImg = this.levelBg;
         console.log("levelbg is loaded");
+        bounds.x = 0;
+        bounds.y = 0;
+        bounds.w = bgImg.width;
+        bounds.h = bgImg.height;
+        this._levelBgReady = true;
+        this.checkReady();
     }
     propmapLoaded() {
         this.propmapCanvas.width = this.propmapImg.width;
         this.propmapCanvas.height = this.propmapImg.height;
         this.propmapCtx.drawImage(this.propmapImg, 0, 0);
-        this.propmap = this.propmapCtx.getImageData(0, 0, this.propmapImg.width, this.propmapImg.height).data;
+        this.propmapData = this.propmapCtx.getImageData(0, 0, this.propmapImg.width, this.propmapImg.height);
+        this.propmap = this.propmapData.data;
+        for (let i = 0; i < this.propmap.length; i += 4) {
+            let isOrigin = this.propmap[i] == 0 && this.propmap[i + 1] == 255 && this.propmap[i + 2] == 255;
+            if (isOrigin) {
+                let pixelIndex = i / 4;
+                this.originX = pixelIndex % this.propmapData.width;
+                this.originY = Math.floor(pixelIndex / this.propmapData.width);
+                console.log(`found level origin for ${this.name} @ X: ${this.originX}, Y: ${this.originY}`);
+                break;
+            }
+        }
         console.log("propmap is loaded");
+        this._propmapReady = true;
+        this.checkReady();
+    }
+    checkReady() {
+        if (this._levelBgReady && this._propmapReady) {
+            this.levelReady();
+        }
+    }
+    levelReady() {
+        new Player();
+        player.x = this.originX;
+        player.y = this.originY;
         activeLevel = this;
+        console.log(`level ${this.name} finished loading`);
     }
     getProps(x, y) {
+        x = Math.floor(x);
+        y = Math.floor(y);
+        if (debugging) {
+            let { x: plotX, y: plotY } = camOffset(x, y);
+            rect(plotX, plotY, 5, 5, "green");
+        }
         const index = (y * this.propmapImg.width + x) * 4;
         return {
             collision: this.propmap[index] == 255 || typeof this.propmap[index] == "undefined",
-            conditionalCollision: this.propmap[index] == 255 && this.propmap[index + 1] == 255,
+            conditionalCollision: this.propmap[index] == 255 && this.propmap[index + 1] == 255 && this.propmap[index + 2] == 0,
+            goal: this.propmap[index] == 0 && this.propmap[index + 1] == 255 && this.propmap[index + 2] == 0,
+            slope: this.propmap[index] == 255 && this.propmap[index + 1] == 0 && this.propmap[index + 2] == 255,
             rawR: this.propmap[index],
             rawG: this.propmap[index + 1],
             rawB: this.propmap[index + 2]
         }
+    }
+    next() {
+        curr_level++;
+        return new Level(LEVEL_SEQUENCE[curr_level]);
     }
 }
 
@@ -663,10 +812,6 @@ function blank() {
             ctx.strokeStyle = "red";
             ctx.strokeRect(boundX, boundY, bounds.w, bounds.h);
         }
-        bounds.x = 0;
-        bounds.y = 0;
-        bounds.w = bgImg.width;
-        bounds.h = bgImg.height;
     }
 }
 
@@ -708,9 +853,10 @@ function gameLoop(currentTime) {
 
     blank();
 
-    if (cutscene) {
-        if (cutscene.draw) cutscene.draw();
+    if (activeCutscene) {
+        if (activeCutscene.draw) activeCutscene.draw();
         processKeys();
+        accumulator = 0;
     } else if (activeMenu) {
         if (activeMenu.draw) activeMenu.draw();
         framecount++;
@@ -735,12 +881,14 @@ function gameLoop(currentTime) {
     if (debugging) {
         text(0, 0, "DEBUG MODE", "red", 15, false);
     }
-    window.requestAnimationFrame(gameLoop);
+    if (ents.length < 1000) window.requestAnimationFrame(gameLoop);
 }
 
 function startGameOnKeypress() {
     if (started) return;
     started = true;
+    keysPressed.clear();
+    new Menu(MAIN_MENU_LAYOUT);
     window.requestAnimationFrame(gameLoop);
 }
 
@@ -753,7 +901,7 @@ document.addEventListener("keydown", function (e) {
 
 document.addEventListener("keyup", function (e) {
     keysPressed.delete(e.key.toLowerCase());
-    startGameOnKeypress();
+    // startGameOnKeypress();
     loadSounds();
 });
 
@@ -765,7 +913,6 @@ document.addEventListener("mousedown", function (e) {
 // scaleCanvas();
 canvas.width = 1500;
 canvas.height = 800;
-new Menu(MAIN_MENU_LAYOUT);
 
 playSound("title");
 blank();
