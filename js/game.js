@@ -400,7 +400,7 @@ async function loadSounds() {
 
 function renderAll() {
 	for (const ent of gameContext.ents) {
-		ent.draw();
+		if(ent.visible) ent.draw();
 	}
 }
 

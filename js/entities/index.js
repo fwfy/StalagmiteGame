@@ -47,6 +47,7 @@ export class Entity extends GameObject {
 		this.health = 100;
 		this.sounds = [];
 		this.ignoreCamOffset = false;
+		this.visible = true;
 		gameContext.ents.push(this);
 	}
 	draw() {
