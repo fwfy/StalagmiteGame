@@ -54,3 +54,9 @@ export function moveCamTo(targetX, targetY) {
 	gameContext.camera.x = Math.max(halfW, Math.min(gameContext.bgImg.width - halfW, targetX));
 	gameContext.camera.y = Math.max(halfH, Math.min(gameContext.bgImg.height - halfH, targetY));
 }
+
+export function rgbToHex(r=0,g=0,b=0) {
+    let rh = r.toString(16), gh = g.toString(16), bh = b.toString(16);
+    let val = `#${rh + "0".repeat(2 - rh.length)}${gh + "0".repeat(2 - gh.length)}${bh + "0".repeat(2 - bh.length)}`;
+    return val.toUpperCase();
+}
