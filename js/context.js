@@ -1,8 +1,4 @@
-export let gameContext = {
-    canvas: null,
-    ctx: null,
-    activeMenu: null,
-    activeLevel: null,
-    activeCutscene: null,
-    player: null
+export let gameContext = {};
+export function setGameContext(obj) {
+    gameContext = obj;
 }
