@@ -1,7 +1,7 @@
 import { Player } from "./entities/player.js";
 import { Cutscene } from "./cutscene.js";
 import { gameContext } from "./context.js";
-import { camOffset, rect } from "./util.js";
+import { camOffset, rect, rgbToHex } from "./util.js";
 
 export class Level {
 	constructor(name) {
@@ -75,10 +75,13 @@ export class Level {
 			rect(plotX-2.5, plotY-2.5, 5, 5, "green");
 		}
 		const index = (y * this.propmapImg.width + x) * 4;
+		const color = rgbToHex(this.propmap[index], this.propmap[index + 1], this.propmap[index + 2])
 		return {
-			collision: this.propmap[index] == 255 || typeof this.propmap[index] == "undefined",
-			conditionalCollision: this.propmap[index] == 255 && this.propmap[index + 1] == 255 && this.propmap[index + 2] == 0,
-			goal: this.propmap[index] == 0 && this.propmap[index + 1] == 255 && this.propmap[index + 2] == 0,
+			collision: color == "#FF0000" || typeof this.propmap[index] == "undefined",
+			conditionalCollision: color == "#FFFF00",
+			hazardous: color == "#FFAA00",
+			goal: color == "#00FF00",
+			rawH: color,
 			rawR: this.propmap[index],
 			rawG: this.propmap[index + 1],
 			rawB: this.propmap[index + 2]
