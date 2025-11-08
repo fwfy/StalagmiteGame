@@ -29,7 +29,7 @@ export class Menu {
 		blank();
 		let center_x = this.ctx.canvas.width / 2;
 		let height = this.ctx.canvas.height;
-		let scale = this.layout.title_animation ? this.layout.title_animation(window.framecount) : 50;
+		let scale = this.layout.title_animation ? this.layout.title_animation(gameContext.framecount) : 50;
 		if (this.title_img) {
 			this.ctx.drawImage(this.title_img, center_x - (scale * this.title_img_ratio / 2), (height * 0.3) + this.yOffset, scale * this.title_img_ratio, scale);
 		} else {
