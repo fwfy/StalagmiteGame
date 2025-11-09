@@ -1,6 +1,7 @@
 import { gameContext } from "../context.js";
 import { Entity } from "./index.js";
 import { text, moveCamTo } from "../util.js";
+import { triggerKillScreen } from "../killscreen.js";
 
 export class Player extends Entity {
 	constructor() {
@@ -10,6 +11,7 @@ export class Player extends Entity {
 		this.ignoreCamOffset = false;
 		this.onGround = false;
 		this.noclip = false;
+		this.lastDbgPrintout = 0;
 	}
 	draw() {
 		if (!gameContext.activeCutscene) moveCamTo(this.x, this.y);
@@ -36,7 +38,11 @@ export class Player extends Entity {
 				ent.action(this);
 			}
 		}
-		if (gameContext.debugging) {
+		if(this.propsAt.hazardous) {
+			this.kill();
+		}
+		if (gameContext.debugging && this.lastDbgPrintout !== gameContext.framecount) {
+			this.lastDbgPrintout = gameContext.framecount;
 			let dbgInfo = {
 				onGround: this.onGround,
 				jumpState: this.jumpState,
@@ -54,6 +60,10 @@ export class Player extends Entity {
 				text(0, 50 + (15 * i), `${prop}: ${this.propsBelow[prop]}`, "red", 15, false);
 				i++;
 			}
+			for (const prop of Object.keys(this.propsAt)) {
+				text(0, 50 + (15 * i), `${prop}: ${this.propsAt[prop]}`, "green", 15, false);
+				i++;
+			}
 			for (const prop of Object.keys(dbgInfo)) {
 				text(0, 50 + (15 * i), `${prop}: ${dbgInfo[prop]}`, "cyan", 15, false);
 				i++;
@@ -62,5 +72,13 @@ export class Player extends Entity {
 		if (this.propsAt.goal) {
 			gameContext.activeLevel.next();
 		}
+	}
+	kill() {
+		this.visible = false;
+		this.x = gameContext.activeLevel.originX;
+		this.y = gameContext.activeLevel.originY;
+		this.xv = 0;
+		this.yv = 0;
+		triggerKillScreen();
 	}
 }
