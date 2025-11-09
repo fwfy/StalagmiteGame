@@ -6,7 +6,6 @@ export class Cutscene {
 		this.script = script;
 		this.pos = 0;
 		this.counter = 0;
-		debugger
 	}
 	draw() {
 		let instruction = this.script[this.pos];
@@ -34,6 +33,6 @@ export class Cutscene {
 		}
 	}
 	end() {
-		activeCutscene = false;
+		gameContext.activeCutscene = false;
 	}
 }
