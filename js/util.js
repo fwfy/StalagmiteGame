@@ -43,9 +43,9 @@ export function playSound(sound, sourceEnt) {
 	}
 }
 
-export function rect(x, y, w, h, color="green") {
-    gameContext.ctx.strokeStyle = color;
-    gameContext.ctx.strokeRect(x,y,w,h);
+export function rect(x, y, w, h, color = "green") {
+	gameContext.ctx.strokeStyle = color;
+	gameContext.ctx.strokeRect(x, y, w, h);
 }
 
 export function moveCamTo(targetX, targetY) {
@@ -55,8 +55,8 @@ export function moveCamTo(targetX, targetY) {
 	gameContext.camera.y = Math.max(halfH, Math.min(gameContext.bgImg.height - halfH, targetY));
 }
 
-export function rgbToHex(r=0,g=0,b=0) {
-    let rh = r.toString(16), gh = g.toString(16), bh = b.toString(16);
-    let val = `#${rh + "0".repeat(2 - rh.length)}${gh + "0".repeat(2 - gh.length)}${bh + "0".repeat(2 - bh.length)}`;
-    return val.toUpperCase();
+export function rgbToHex(r = 0, g = 0, b = 0) {
+	let rh = r.toString(16), gh = g.toString(16), bh = b.toString(16);
+	let val = `#${rh + "0".repeat(2 - rh.length)}${gh + "0".repeat(2 - gh.length)}${bh + "0".repeat(2 - bh.length)}`;
+	return val.toUpperCase();
 }
