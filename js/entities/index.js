@@ -146,14 +146,14 @@ export class Entity extends GameObject {
 			const checkXProps = gameContext.activeLevel.getProps(checkX, this.coY);
 			const checkYProps = gameContext.activeLevel.getProps(this.coX, checkY);
 
-			if (checkXProps.collision && !checkXProps.slope) {
+			if (checkXProps.collision) {
 				this.xv = 0;
 			}
-			if (checkYProps.collision && Math.abs(this.yv) > 1 && !checkYProps.slope) {
+			if (checkYProps.collision && Math.abs(this.yv) > 1) {
 				this.yv = 0;
 			}
 
-			if (this.propsBelow.collision && this.yv >= 0 && !this.propsBelow.slope) {
+			if ((this.propsBelow.collision || checkXProps.conditionalCollision) && this.yv >= 0) {
 				this.yv = 0;
 				if (this.propsAt.collision) {
 					this.y--;
