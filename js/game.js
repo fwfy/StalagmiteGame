@@ -632,32 +632,33 @@ function gameLoop(currentTime) {
 
 	gameContext.ents = gameContext.ents.filter(e => !e._kill); // remove all entities marked for deletion
 
-	blank();
 
-	if (gameContext.activeCutscene) {
-		if (gameContext.activeCutscene.draw) gameContext.activeCutscene.draw();
-		processKeys();
-		gameContext.accumulator = 0;
-	} else if (gameContext.activeMenu) {
-		if (gameContext.activeMenu.draw) gameContext.activeMenu.draw();
+	let shouldRender = true;
+
+	while (gameContext.accumulator >= gameContext.PHYSICS_TICK_MS) {
 		gameContext.framecount++;
-		processKeys();
-		gameContext.accumulator = 0;
-	} else {
-		if (gameContext.accumulator > 20 * gameContext.PHYSICS_TICK_MS && !gameContext.dbgFlags.disableSpiralPrevention) {
-			gameContext.accumulator = 20 * gameContext.PHYSICS_TICK_MS; // if the user's pc is REALLY STRUGGLING to do physics, this will prevent it from entering a death spiral
-			if (gameContext.debugging) text(0, 15, "LAG!", "red", 15, false);
+		blank();
+		if (gameContext.activeCutscene) {
+			shouldRender = false;
+			if (gameContext.activeCutscene.draw) gameContext.activeCutscene.draw();
+		} else if (gameContext.activeMenu) {
+			shouldRender = false;
+			if (gameContext.activeMenu.draw) gameContext.activeMenu.draw();
 		} else {
-			if (gameContext.debugging) text(0, 15, `${gameContext.accumulator.toFixed(0)}`, "red", 15, false);
-		}
-		while (gameContext.accumulator >= gameContext.PHYSICS_TICK_MS) {
-			gameContext.framecount++;
-			processKeys();
 			tickAll();
-			gameContext.accumulator -= gameContext.PHYSICS_TICK_MS;
 		}
-		renderAll();
+		processKeys();
+		gameContext.accumulator -= gameContext.PHYSICS_TICK_MS;
 	}
+
+	if (gameContext.accumulator > 20 * gameContext.PHYSICS_TICK_MS && !gameContext.dbgFlags.disableSpiralPrevention) {
+		gameContext.accumulator = 20 * gameContext.PHYSICS_TICK_MS; // if the user's pc is REALLY STRUGGLING to run the game, this will prevent it from entering a death spiral
+		if (gameContext.debugging) text(0, 15, "LAG!", "red", 15, false);
+	} else {
+		if (gameContext.debugging) text(0, 15, `${gameContext.accumulator.toFixed(0)}`, "red", 15, false);
+	}
+
+	if (shouldRender) renderAll();
 
 	if (gameContext.debugging) {
 		text(0, 0, "DEBUG MODE", "red", 15, false);
