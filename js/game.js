@@ -45,7 +45,7 @@ setGameContext({
 	playingDemo: false,
 	LEVEL_SEQUENCE: [
 		"test2",
-		"test2"
+		"test"
 	],
 	sounds: {
 		"itemget": {
