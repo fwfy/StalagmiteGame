@@ -168,8 +168,8 @@ setGameContext({
 		},
 		"i": {
 			fn: _ => {
-				recording = false;
-				inputs[0] = [];
+				gameContext.recording = false;
+				gameContext.inputs[0] = [];
 			}, sf: true
 		},
 		"p": {
@@ -223,7 +223,29 @@ setGameContext({
 				},
 				"Options": _ => {
 					gameContext.activeMenu.openSubMenu(gameContext.MENUS.OPTIONS_LAYOUT);
+				}
+			}
+		},
+
+		RECORDING_LAYOUT: {
+			"title": "Input / Demo Recording",
+			"options": {
+				"Start Recording": _ => {
+					gameContext.activeMenu.previousMenu = false;
+					gameContext.activeMenu.dismiss();
+					beginRecording();
 				},
+				"Finish Recording": _ => {
+					gameContext.activeMenu.previousMenu = false;
+					gameContext.activeMenu.dismiss();
+					endRecording();
+					alert(`Recording finished! Copy the below text to share your input recording:\n\n${exportRecording()}`);
+				},
+				"Play Recording": _ => {
+					gameContext.activeMenu.previousMenu = false;
+					gameContext.activeMenu.dismiss();
+					playRecording(importRecording(prompt(`Paste in some recorded data to play it back!`)));
+				}
 			}
 		},
 
@@ -236,6 +258,9 @@ setGameContext({
 				},
 				"Options": _ => {
 					gameContext.activeMenu.openSubMenu(gameContext.MENUS.OPTIONS_LAYOUT);
+				},
+				"Recording": _ => {
+					gameContext.activeMenu.openSubMenu(gameContext.MENUS.RECORDING_LAYOUT);
 				},
 				"Return to Main Menu": _ => {
 					playSound("title");
@@ -360,6 +385,75 @@ gameContext.PHYSICS_TICK_MS = 1000 / gameContext.PHYSICS_HZ;
 
 gameContext.dogs[0].src = "assets/other/dog1.png";
 gameContext.dogs[1].src = "assets/other/dog2.png";
+
+function beginRecording() {
+	gameContext.recording = true;
+	gameContext.framecount = 0;
+	gameContext.player.x = gameContext.activeLevel.originX;
+	gameContext.player.y = gameContext.activeLevel.originY;
+	gameContext.player.xv = 0;
+	gameContext.player.yv = 0;
+}
+
+function endRecording() {
+	gameContext.recording = false;
+	gameContext.inputs[0] = []; // get rid of first input (the one that starts recording)
+	console.log(exportRecording());
+	return gameContext.inputs;
+}
+
+function playRecording(input_sequence = gameContext.inputs) {
+	gameContext.inputs = input_sequence;
+	gameContext.framecount = 0;
+	gameContext.accumulator = 0;
+	gameContext.player.x = gameContext.activeLevel.originX;
+	gameContext.player.y = gameContext.activeLevel.originY;
+	gameContext.player.xv = 0;
+	gameContext.player.yv = 0;
+	gameContext.playingDemo = true;
+}
+
+function exportRecording(input_sequence = gameContext.inputs) {
+	let out = [];
+	let currSameStreak = 0;
+	let lastInput = null;
+	for (const inp of input_sequence) {
+		const input = inp.join("+");
+		if (lastInput === input) {
+			currSameStreak++;
+		} else {
+			if (currSameStreak > 0) {
+				out.push(`#${currSameStreak}`);
+				currSameStreak = 0;
+			}
+			lastInput = input;
+			out.push(input);
+		}
+	}
+	if (currSameStreak > 0) out.push(`#${currSameStreak}`);
+	return btoa(out.join(","));
+}
+
+function importRecording(encoded) {
+	const tokens = atob(encoded).split(",");
+	const output = [];
+	let lastFrame = [];
+
+	for (const token of tokens) {
+		if (token.startsWith("#")) {
+			const repeatCount = parseInt(token.slice(1), 10);
+			for (let i = 0; i < repeatCount; i++) {
+				output.push([...lastFrame]);
+			}
+		} else {
+			const frame = token ? token.split("+") : [];
+			output.push(frame);
+			lastFrame = frame;
+		}
+	}
+	return output;
+}
+
 
 async function getAudioFromFile(filepath) {
 	const response = await fetch(filepath);
@@ -491,11 +585,7 @@ function tickAll() {
 
 function processKeys() {
 	if (gameContext.playingDemo && gameContext.framecount >= gameContext.inputs.length) {
-		gameContext.player.x = gameContext.activeLevel.originX;
-		gameContext.player.y = gameContext.activeLevel.originY;
-		gameContext.player.xv = 0;
-		gameContext.player.yv = 0;
-		gameContext.framecount = 0;
+		gameContext.playingDemo = false;
 		return;
 	}
 	if (gameContext.playingDemo) {
@@ -507,7 +597,7 @@ function processKeys() {
 	for (const k of Object.keys(gameContext.keyBinds)) {
 		if (gameContext.keysPressed.has(k)) {
 			gameContext.keyBinds[k].fn();
-			if (gameContext.recording) {
+			if (gameContext.recording && !gameContext.activeMenu) {
 				if (!gameContext.inputs[gameContext.framecount]) {
 					gameContext.inputs[gameContext.framecount] = [k];
 				} else {
