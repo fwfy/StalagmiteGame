@@ -42,7 +42,7 @@ export class Level {
 		this.propmapData = this.propmapCtx.getImageData(0, 0, this.propmapImg.width, this.propmapImg.height);
 		this.propmap = this.propmapData.data;
 		for (let i = 0; i < this.propmap.length; i += 4) {
-			let isOrigin = this.propmap[i] == 0 && this.propmap[i + 1] == 255 && this.propmap[i + 2] == 255;
+			let isOrigin = rgbToHex(this.propmap[i], this.propmap[i+1], this.propmap[i+2]) == "#00FFFF";
 			if (isOrigin) {
 				let pixelIndex = i / 4;
 				this.originX = pixelIndex % this.propmapData.width;
