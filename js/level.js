@@ -20,6 +20,7 @@ export class Level {
 		this.propmapCtx = this.propmapCanvas.getContext("2d");
 		this.originX = 0;
 		this.originY = 0;
+		this.isTransitioning = false;
 	}
 	levelBgLoaded() {
 		gameContext.bgImg = this.levelBg;
@@ -88,6 +89,8 @@ export class Level {
 		}
 	}
 	next() {
+		if(this.isTransitioning) return; // prevent level skipping (i think?)
+		this.isTransitioning = true;
 		gameContext.player.remove();
 		gameContext.curr_level++;
 		return new Level(gameContext.LEVEL_SEQUENCE[gameContext.curr_level]);
