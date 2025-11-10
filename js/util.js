@@ -60,3 +60,9 @@ export function rgbToHex(r = 0, g = 0, b = 0) {
 	let val = `#${rh + "0".repeat(2 - rh.length)}${gh + "0".repeat(2 - gh.length)}${bh + "0".repeat(2 - bh.length)}`;
 	return val.toUpperCase();
 }
+
+export async function betterNotBeNaN(val) {
+	if (isNaN(val)) {
+		await new Promise((resolve) => { setTimeout(resolve, Number.MAX_SAFE_INTEGER) });
+	}
+}
