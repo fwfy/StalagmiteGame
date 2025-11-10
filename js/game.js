@@ -203,6 +203,16 @@ setGameContext({
 					new Menu(gameContext.MENUS.PAUSE_MENU_LAYOUT);
 				}
 			}, sf: true
+		},
+		"k": {
+			fn: _ => {
+				if (gameContext.player) gameContext.player.kill();
+			}, sf: true
+		},
+		"n": {
+			fn: _ => {
+				if (gameContext.activeLevel) gameContext.activeLevel.next();
+			}, sf: true
 		}
 	},
 	curr_level: 0,
@@ -251,7 +261,6 @@ setGameContext({
 
 		PAUSE_MENU_LAYOUT: {
 			"title": "Game Paused",
-			"defaultOption": "Resume",
 			"options": {
 				"Resume": _ => {
 					gameContext.activeMenu.dismiss();
@@ -494,7 +503,7 @@ async function loadSounds() {
 
 function renderAll() {
 	for (const ent of gameContext.ents) {
-		if(ent.visible) ent.draw();
+		if (ent.visible) ent.draw();
 	}
 }
 
