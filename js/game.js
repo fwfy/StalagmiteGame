@@ -396,6 +396,7 @@ gameContext.dogs[0].src = "assets/other/dog1.png";
 gameContext.dogs[1].src = "assets/other/dog2.png";
 
 function beginRecording() {
+	gameContext.inputs = [];
 	gameContext.recording = true;
 	gameContext.framecount = 0;
 	gameContext.player.x = gameContext.activeLevel.originX;
