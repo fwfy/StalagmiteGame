@@ -251,10 +251,10 @@ setGameContext({
 					endRecording();
 					alert(`Recording finished! Copy the below text to share your input recording:\n\n${exportRecording()}`);
 				},
-				"Play Recording": _ => {
+				"Play Recording": async _ => {
 					gameContext.activeMenu.previousMenu = false;
 					gameContext.activeMenu.dismiss();
-					playRecording(importRecording(prompt(`Paste in some recorded data to play it back!`)));
+					await playRecording(importRecording(prompt(`Paste in some recorded data to play it back!`)));
 				}
 			}
 		},
@@ -406,12 +406,21 @@ function beginRecording() {
 
 function endRecording() {
 	gameContext.recording = false;
-	gameContext.inputs[0] = []; // get rid of first input (the one that starts recording)
+	gameContext.inputs[0] = [`${gameContext.activeLevel.name}`];
 	console.log(exportRecording());
 	return gameContext.inputs;
 }
 
-function playRecording(input_sequence = gameContext.inputs) {
+async function playRecording(input_sequence = gameContext.inputs) {
+	if(input_sequence[0]?.[0]?.[0] == "%") { // handle loading of a specific level
+		gameContext.player.remove();
+		let level = new Level(input_sequence.shift()[0].slice(1));
+		await new Promise((resolve) => {
+			setInterval(_ => {
+				if(level.doneLoading) resolve();
+			},100);
+		});
+	}
 	gameContext.inputs = input_sequence;
 	gameContext.framecount = 0;
 	gameContext.accumulator = 0;

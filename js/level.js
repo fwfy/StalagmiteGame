@@ -20,6 +20,7 @@ export class Level {
 		this.propmapCtx = this.propmapCanvas.getContext("2d");
 		this.originX = 0;
 		this.originY = 0;
+		this.doneLoading = false;
 		this.isTransitioning = false;
 	}
 	levelBgLoaded() {
@@ -66,6 +67,7 @@ export class Level {
 		gameContext.player.x = this.originX;
 		gameContext.player.y = this.originY;
 		gameContext.activeLevel = this;
+		this.doneLoading = true;
 		console.log(`level ${this.name} finished loading`);
 	}
 	getProps(x, y) {
