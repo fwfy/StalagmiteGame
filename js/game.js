@@ -677,7 +677,6 @@ document.addEventListener("mousedown", function (e) {
 gameContext.canvas.width = 1500;
 gameContext.canvas.height = 800;
 
-playSound("title");
 blank();
 text(gameContext.canvas.width / 2, gameContext.canvas.height / 2, "Click anywhere to start!", "white", 60, true);
 window.gameContext = gameContext;
