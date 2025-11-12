@@ -1,5 +1,5 @@
 import { gameContext } from "../context.js";
-import { playSound, camOffset } from "../util.js";
+import { camOffset } from "../util.js";
 
 export class GameObject {
 	constructor(x, y) {
@@ -176,7 +176,7 @@ export class Entity extends GameObject {
 		return this.isCollidingWith(gameContext.bounds);
 	}
 	playSound(name) {
-		playSound(name, this);
+		this.sounds.push(gameContext.audioManager.playSound(name));
 	}
 	sprLoaded() {
 		console.log("sprLoaded");

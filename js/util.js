@@ -27,22 +27,6 @@ export function blank() {
 	}
 }
 
-export function playSound(sound, sourceEnt) {
-	if (!gameContext.sounds[sound]?.loaded) {
-		gameContext.queuedSounds.push({ sound, sourceEnt });
-		return console.log(`queueing ${sound} because sounds aren't finished loading yet`);
-	}
-	const trackSource = gameContext.audioContext.createBufferSource();
-	trackSource.buffer = gameContext.sounds[sound].file;
-	trackSource.connect(gameContext.gainNode);
-	trackSource.start();
-	trackSource.loop = !!gameContext.sounds[sound].loop;
-	gameContext.soundsPlaying.push(trackSource);
-	if (sourceEnt) {
-		sourceEnt.sounds.push(trackSource);
-	}
-}
-
 export function rect(x, y, w, h, color = "green") {
 	gameContext.ctx.strokeStyle = color;
 	gameContext.ctx.strokeRect(x, y, w, h);

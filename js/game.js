@@ -4,24 +4,20 @@ import { Menu } from "./menu.js";
 import { Cutscene } from "./cutscene.js";
 import { Level } from "./level.js";
 import { gameContext, setGameContext } from "./context.js";
-import { text, blank, playSound } from "./util.js";
+import { text, blank } from "./util.js";
+import { AudioManager } from "./audio.js";
 
 setGameContext({
 	debugging: true,
 	run: true,
-	audioContext: null,
-	gainNode: null,
+	audioManager: null,
 	accumulator: 0,
 	previousTime: performance.now(),
-	queuedSounds: [],
-	soundsPlaying: [],
 	started: false,
 	bgImg: new Image(),
 	dogs: [new Image(), new Image()],
 	keysPressed: new Set(),
 	ents: [],
-	soundsLoaded: false,
-	soundsLoading: false,
 	framecount: 0,
 	camera: {
 		x: 0,
@@ -49,20 +45,20 @@ setGameContext({
 	],
 	sounds: {
 		"itemget": {
-			type: "sfx",
+			channel: "SFX",
 			path: "assets/sfx/itemget.mp3"
 		},
 		"jump": {
-			type: "sfx",
+			channel: "SFX",
 			path: "assets/sfx/jump.mp3"
 		},
 		"title": {
-			type: "music",
+			channel: "Music",
 			path: "assets/music/title.mp3",
 			loop: true
 		},
 		"dance": {
-			type: "music",
+			channel: "Music",
 			path: "assets/music/dance.mp3",
 			loop: true
 		}
@@ -111,9 +107,7 @@ setGameContext({
 		},
 		"t": {
 			fn: _ => {
-				for (const sound of gameContext.soundsPlaying) {
-					sound.stop();
-				}
+				gameContext.audioManager.haltAll();
 			}, sf: true
 		},
 		"c": {
@@ -224,10 +218,7 @@ setGameContext({
 			"defaultOption": "Begin Game",
 			"options": {
 				"Begin Game": _ => {
-					for (const sound of gameContext.soundsPlaying) {
-						sound.stop();
-					}
-					gameContext.queuedSounds = [];
+					gameContext.audioManager.haltAll();
 					gameContext.activeMenu.dismiss();
 					new Level(gameContext.LEVEL_SEQUENCE[gameContext.curr_level]);
 				},
@@ -272,7 +263,7 @@ setGameContext({
 					gameContext.activeMenu.openSubMenu(gameContext.MENUS.RECORDING_LAYOUT);
 				},
 				"Return to Main Menu": _ => {
-					playSound("title");
+					gameContext.audioManager.playSound("title");
 					blank();
 					gameContext.player.remove();
 					gameContext.activeLevel = null;
@@ -348,13 +339,11 @@ setGameContext({
 		DANCE_OF_DOG: [
 			{
 				func: _ => {
-					for (const sound of gameContext.soundsPlaying) {
-						sound.stop();
-					}
+					gameContext.audioManager.haltAll();
 					gameContext.ctx.fillStyle = "black";
 					gameContext.ctx.globalAlpha = 1;
 					gameContext.ctx.fillRect(0, 0, gameContext.canvas.width, gameContext.canvas.height);
-					playSound("dance");
+					gameContext.audioManager.playSound("dance");
 				},
 				canProceedWhen: _ => true
 			},
@@ -483,27 +472,12 @@ async function getAudioFromFile(filepath) {
 
 async function loadSounds() {
 	if (gameContext.soundsLoaded || gameContext.soundsLoading) return;
-	gameContext.audioContext = new AudioContext();
-	if (gameContext.audioContext.state == "suspended") {
-		await gameContext.audioContext.resume();
-	}
+	gameContext.audioManager = new AudioManager();
 	let soundPromises = [];
 	gameContext.soundsLoading = true;
-	gameContext.gainNode = gameContext.audioContext.createGain();
-	gameContext.gainNode.connect(gameContext.audioContext.destination);
-	gameContext.gainNode.gain.value = 0.1;
-	for (const sound of Object.keys(gameContext.sounds)) {
-		soundPromises.push(getAudioFromFile(gameContext.sounds[sound].path).then(data => {
-			gameContext.sounds[sound].file = data;
-			gameContext.sounds[sound].loaded = true;
-			for (const queued of gameContext.queuedSounds) {
-				if (queued.sound != sound) continue;
-				console.log(queued, sound);
-				console.log(`playing queued sound ${queued.sound}`);
-				playSound(queued.sound, queued.sourceEnt);
-			}
-		}));
-		console.log(`began loading sound ${sound}`);
+	for (const soundName of Object.keys(gameContext.sounds)) {
+		let sound = gameContext.sounds[soundName];
+		soundPromises.push(gameContext.audioManager.registerSound(soundName, sound.path, sound.channel, sound.loop))
 	}
 	await Promise.all(soundPromises);
 	console.log(`finished loading all sounds`);
@@ -680,6 +654,7 @@ function startGameOnKeypress() {
 	if (gameContext.started) return;
 	gameContext.started = true;
 	gameContext.keysPressed.clear();
+	gameContext.audioManager.playSound("title");
 	new Menu(gameContext.MENUS.MAIN_MENU_LAYOUT);
 	window.requestAnimationFrame(gameLoop);
 }
@@ -705,3 +680,4 @@ gameContext.canvas.height = 800;
 playSound("title");
 blank();
 text(gameContext.canvas.width / 2, gameContext.canvas.height / 2, "Click anywhere to start!", "white", 60, true);
+window.gameContext = gameContext;
