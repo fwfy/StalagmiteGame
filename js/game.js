@@ -1,4 +1,3 @@
-import { SonLoaf } from "./entities/sonloaf.js";
 import { Miku } from "./entities/miku.js";
 import { Menu } from "./menu.js";
 import { Cutscene } from "./cutscene.js";
