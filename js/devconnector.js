@@ -8,7 +8,7 @@ export class DevConnector {
     constructor() {
         if(gameContext._DEVCONNECTOR) throw new Error("There's already an instance of DevConnector attached!");
         gameContext._DEVCONNECTOR = true;
-        gameContext.assetRoot = `http://127.0.0.1:22422`;
+        gameContext.assetRoot = `https://127.0.0.1:22422`;
         this.ws = null;
         this.connecting = false;
         this.errored = false;
@@ -30,7 +30,7 @@ export class DevConnector {
         try {
             logger.log(`Connecting to local DevConnector instance...`);
             this.status("Setting up connection...");
-            this.ws = new WebSocket("http://127.0.0.1:22422");
+            this.ws = new WebSocket("wss://127.0.0.1:22422");
             this.ws.addEventListener("open", this.wsOpen.bind(this));
             this.ws.addEventListener("close", this.wsError.bind(this));
             this.ws.addEventListener("error", this.wsError.bind(this));
