@@ -51,7 +51,7 @@ export class Level {
 		this.propmapData = this.propmapCtx.getImageData(0, 0, this.propmapImg.width, this.propmapImg.height);
 		this.propmap = this.propmapData.data;
 		for (let i = 0; i < this.propmap.length; i += 4) {
-			let isOrigin = rgbToHex(this.propmap[i], this.propmap[i+1], this.propmap[i+2]) == "#00FFFF";
+			let isOrigin = rgbToHex(this.propmap[i], this.propmap[i + 1], this.propmap[i + 2]) == "#00FFFF";
 			if (isOrigin) {
 				let pixelIndex = i / 4;
 				this.originX = pixelIndex % this.propmapData.width;
@@ -84,7 +84,7 @@ export class Level {
 		y = Math.floor(y);
 		if (gameContext.debugging) {
 			let { x: plotX, y: plotY } = camOffset(x, y);
-			rect(plotX-2.5, plotY-2.5, 5, 5, "green");
+			rect(plotX - 2.5, plotY - 2.5, 5, 5, "green");
 		}
 		const index = (y * this.propmapImg.width + x) * 4;
 		const color = rgbToHex(this.propmap[index], this.propmap[index + 1], this.propmap[index + 2])
@@ -100,7 +100,7 @@ export class Level {
 		}
 	}
 	next() {
-		if(this.isTransitioning) return; // prevent level skipping (i think?)
+		if (this.isTransitioning) return; // prevent level skipping (i think?)
 		this.isTransitioning = true;
 		gameContext.player.remove();
 		gameContext.curr_level++;
