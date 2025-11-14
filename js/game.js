@@ -5,10 +5,14 @@ import { Level } from "./level.js";
 import { gameContext, setGameContext } from "./context.js";
 import { text, blank } from "./util.js";
 import { AudioManager } from "./audio.js";
+import { DevConnector } from "./devconnector.js";
+
+const assetRoot = window.location.href.replaceAll(/\/$/g, "");
 
 setGameContext({
 	debugging: true,
 	run: true,
+	assetRoot,
 	audioManager: null,
 	accumulator: 0,
 	previousTime: performance.now(),
@@ -17,6 +21,7 @@ setGameContext({
 	dogs: [new Image(), new Image()],
 	keysPressed: new Set(),
 	ents: [],
+	overlays: [],
 	framecount: 0,
 	camera: {
 		x: 0,
@@ -29,7 +34,8 @@ setGameContext({
 		h: 100
 	},
 	dbgFlags: {
-		disableSpiralPrevention: false
+		disableSpiralPrevention: false,
+		showPropmap: false
 	},
 	activeMenu: null,
 	activeLevel: null,
@@ -45,20 +51,20 @@ setGameContext({
 	sounds: {
 		"itemget": {
 			channel: "SFX",
-			path: "assets/sfx/itemget.mp3"
+			path: `${assetRoot}/assets/sfx/itemget.mp3`
 		},
 		"jump": {
 			channel: "SFX",
-			path: "assets/sfx/jump.mp3"
+			path: `${assetRoot}/assets/sfx/jump.mp3`
 		},
 		"title": {
 			channel: "Music",
-			path: "assets/music/title.mp3",
+			path: `${assetRoot}/assets/music/title.mp3`,
 			loop: true
 		},
 		"dance": {
 			channel: "Music",
-			path: "assets/music/dance.mp3",
+			path: `${assetRoot}/assets/music/dance.mp3`,
 			loop: true
 		}
 	},
@@ -92,10 +98,10 @@ setGameContext({
 				}
 			}, sf: true
 		},
-		"f3": {
+		"f2": {
 			fn: _ => {
-				if (!gameContext.debugging) return;
-				new SonLoaf(gameContext.player.x + 60, gameContext.player.y);
+				if (!gameContext.debugging || gameContext._DEVCONNECTOR) return;
+				new DevConnector();
 			}, sf: true
 		},
 		"m": {
@@ -212,7 +218,7 @@ setGameContext({
 	MENUS: {
 		MAIN_MENU_LAYOUT: {
 			"title": "Stalagmite Game",
-			"title_img": "assets/other/title.png",
+			"title_img": `${assetRoot}/assets/other/title.png`,
 			"title_animation": e => { return Math.max(1, 50 + (5 * Math.sin(e / 90))) },
 			"defaultOption": "Begin Game",
 			"options": {
@@ -285,12 +291,24 @@ setGameContext({
 		},
 
 		ISRAEL_LAYOUT: {
-			"title_img": "assets/other/israel.webp",
+			"title_img": `${assetRoot}/assets/other/israel.webp`,
 			"title": "Israel Configuration Menu",
 			"options": {
 				"Commit Warcrime": _ => { },
 				"Acquire Funding": _ => { },
 				"Abolish": _ => { }
+			}
+		},
+
+		CONNECTOR_LAYOUT: {
+			"title": "DevConnector",
+			"options": {
+				"Enable DevConnector": _ => {
+					new DevConnector();
+				},
+				"Back": _ => {
+					gameContext.activeMenu.dismiss();
+				}
 			}
 		},
 
@@ -380,8 +398,8 @@ gameContext.ctx = gameContext.canvas.getContext("2d");
 gameContext.PHYSICS_HZ = 160;
 gameContext.PHYSICS_TICK_MS = 1000 / gameContext.PHYSICS_HZ;
 
-gameContext.dogs[0].src = "assets/other/dog1.png";
-gameContext.dogs[1].src = "assets/other/dog2.png";
+gameContext.dogs[0].src = `${gameContext.assetRoot}/assets/other/dog1.png`;
+gameContext.dogs[1].src = `${gameContext.assetRoot}/assets/other/dog2.png`;
 
 function beginRecording() {
 	gameContext.inputs = [];
@@ -646,6 +664,11 @@ function gameLoop(currentTime) {
 	if (gameContext.debugging) {
 		text(0, 0, "DEBUG MODE", "red", 15, false);
 	}
+
+	for(const overlay of gameContext.overlays) {
+		overlay();
+	}
+
 	if (gameContext.run) gameContext.animFrameID = window.requestAnimationFrame(gameLoop);
 }
 
@@ -655,8 +678,16 @@ function startGameOnKeypress() {
 	gameContext.keysPressed.clear();
 	gameContext.audioManager.playSound("title");
 	new Menu(gameContext.MENUS.MAIN_MENU_LAYOUT);
+	startGame();
+}
+
+function startGame() {
+	gameContext.accumulator = 0;
+	gameContext.previousTime = performance.now();
 	window.requestAnimationFrame(gameLoop);
 }
+
+gameContext.startGame = startGame;
 
 document.addEventListener("keydown", function (e) {
 	console.log(e.key);

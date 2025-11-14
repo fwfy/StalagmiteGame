@@ -23,6 +23,11 @@ export function blank() {
 			let { x: boundX, y: boundY } = camOffset(gameContext.bounds.x, gameContext.bounds.y);
 			gameContext.ctx.strokeStyle = "red";
 			gameContext.ctx.strokeRect(boundX, boundY, gameContext.bounds.w, gameContext.bounds.h);
+			if(gameContext.dbgFlags.showPropmap && gameContext.activeLevel) {
+				gameContext.ctx.globalAlpha = 0.5;
+				gameContext.ctx.drawImage(gameContext.activeLevel?.propmapImg, x, y);
+				gameContext.ctx.globalAlpha = 1;
+			}
 		}
 	}
 }

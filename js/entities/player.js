@@ -5,7 +5,7 @@ import { triggerKillScreen } from "../killscreen.js";
 
 export class Player extends Entity {
 	constructor() {
-		super(gameContext.canvas.width / 2, gameContext.canvas.height / 2, 50, null, "assets/sprites/stalagmite.png", "player");
+		super(gameContext.canvas.width / 2, gameContext.canvas.height / 2, 50, null, `${gameContext.assetRoot}/assets/sprites/stalagmite.png`, "player");
 		gameContext.player = this;
 		this.jumpState = 0;
 		this.ignoreCamOffset = false;

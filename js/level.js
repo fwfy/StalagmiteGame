@@ -8,20 +8,28 @@ export class Level {
 		this.name = name;
 		this._levelBgReady = false;
 		this._propmapReady = false;
-		this.levelBg = new Image();
-		this.levelBg.src = `assets/levels/${name}/level.png`;
-		this.levelBg.onload = _ => this.levelBgLoaded();
-		this.levelBg.onerror = _ => this.dogcheck();
-		this.propmapImg = new Image();
-		this.propmapImg.src = `assets/levels/${name}/propmap.png`;
-		this.propmapImg.onload = _ => this.propmapLoaded();
-		this.propmapImg.onerror = _ => this.dogcheck();
+		this.loadLevelBg();
+		this.loadPropmap();
 		this.propmapCanvas = document.createElement("canvas");
 		this.propmapCtx = this.propmapCanvas.getContext("2d");
 		this.originX = 0;
 		this.originY = 0;
 		this.doneLoading = false;
 		this.isTransitioning = false;
+	}
+	loadLevelBg() {
+		this._levelBgReady = false;
+		this.levelBg = new Image();
+		this.levelBg.src = `${gameContext.assetRoot}/assets/levels/${this.name}/level.png?q=${Math.random()}`;
+		this.levelBg.onload = _ => this.levelBgLoaded();
+		this.levelBg.onerror = _ => this.dogcheck();
+	}
+	loadPropmap() {
+		this._propmapReady = false;
+		this.propmapImg = new Image();
+		this.propmapImg.src = `${gameContext.assetRoot}/assets/levels/${this.name}/propmap.png?q=${Math.random()}`;
+		this.propmapImg.onload = _ => this.propmapLoaded();
+		this.propmapImg.onerror = _ => this.dogcheck();
 	}
 	levelBgLoaded() {
 		gameContext.bgImg = this.levelBg;
@@ -63,6 +71,7 @@ export class Level {
 		}
 	}
 	levelReady() {
+		if (this.doneLoading) return;
 		new Player();
 		gameContext.player.x = this.originX;
 		gameContext.player.y = this.originY;
