@@ -24,6 +24,10 @@ class BetterAudioBSN {
         this._startedAt = this.context.currentTime - offset;
         this._source?.start(null, offset);
     }
+    stop() {
+        this._source?.stop();
+        this._playing = false;
+    }
     get position() {
         const elapsed = this.context.currentTime - this._startedAt;
         const duration = this.buffer.duration;
