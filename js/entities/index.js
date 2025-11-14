@@ -162,7 +162,7 @@ export class Entity extends GameObject {
 			}
 			break;
 		}
-		this.onGround = gameContext.activeLevel.getProps(this.coX, this.coY + 1).collision || this.coY + 1 >= gameContext.bounds.h;
+		this.onGround = this.propsBelow.collision || this.propsBelow.conditionalCollision || this.coY + 1 >= gameContext.bounds.h;
 		this.x += this.xv;
 		this.y += this.yv;
 	}
