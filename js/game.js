@@ -7,6 +7,9 @@ import { text, blank } from "./util.js";
 import { AudioManager } from "./audio.js";
 import { DevConnector } from "./devconnector.js";
 import { createLogger } from "./logger.js";
+import { ControllerInputHandler } from "./controller.js";
+
+const controllerHandler = new ControllerInputHandler();
 
 const log = createLogger("game");
 const assetRoot = window.location.href.replaceAll(/\/$/g, "");
@@ -140,14 +143,14 @@ setGameContext({
 		"a": {
 			fn: _ => {
 				if (gameContext.player) {
-					gameContext.player.xv += -0.20;
+					gameContext.player.xv -= gameContext.player.speed;
 				}
 			}
 		},
 		"d": {
 			fn: _ => {
 				if (gameContext.player) {
-					gameContext.player.xv += 0.20;
+					gameContext.player.xv += gameContext.player.speed;
 				}
 			}
 		},
@@ -596,6 +599,7 @@ function tickAll() {
 }
 
 function processKeys() {
+	controllerHandler.update();
 	if (gameContext.playingDemo && gameContext.framecount >= gameContext.inputs.length) {
 		gameContext.playingDemo = false;
 		return;
