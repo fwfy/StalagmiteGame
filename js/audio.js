@@ -37,6 +37,9 @@ class BetterAudioBSN {
             return Math.min(elapsed, duration);
         }
     }
+    get pctCompleted() {
+        return this.position / this.buffer.duration;
+    }
     connect(dest) {
         this._dest = dest;
         this._source?.connect(dest);
