@@ -181,7 +181,7 @@ export class AudioManager {
         trackSource._audioMgrChannel = sound.channel;
         trackSource._audioMgrName = soundName;
         this.soundsPlaying.push(trackSource);
-        trackSource.onended = _ => { this.soundsPlaying.splice(this.soundsPlaying.indexOf(trackSource), 1) };
+        trackSource._source.onended = _ => { this.soundsPlaying.splice(this.soundsPlaying.indexOf(trackSource), 1) };
         return trackSource;
     }
 }
