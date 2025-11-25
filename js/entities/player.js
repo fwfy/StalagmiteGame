@@ -12,9 +12,12 @@ export class Player extends Entity {
 		this.onGround = false;
 		this.noclip = false;
 		this.lastDbgPrintout = 0;
+		this.speed = 0.20;
+		this.lookXO = 0;
+		this.lookYO = 0;
 	}
 	draw() {
-		if (!gameContext.activeCutscene) moveCamTo(this.x, this.y);
+		if (!gameContext.activeCutscene) moveCamTo(this.x + this.lookXO, this.y + this.lookYO);
 		super.draw();
 	}
 	jump() {
@@ -25,7 +28,7 @@ export class Player extends Entity {
 			this.playSound("jump");
 		} else if (!this.onGround && this.jumpState == 1) {
 			this.xv *= 2.5;
-			this.yv = -15;
+			this.yv = -20;
 			this.jumpState = 2;
 		}
 	}
