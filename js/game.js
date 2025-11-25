@@ -217,6 +217,16 @@ setGameContext({
 			fn: _ => {
 				if (gameContext.activeLevel) gameContext.activeLevel.next();
 			}, sf: true
+		},
+		"5": {
+			fn: _ => {
+				new Cutscene(gameContext.CUTSCENES.CREDITS);
+			}, sf: true
+		},
+		"6": {
+			fn: _ => {
+				new Cutscene(gameContext.CUTSCENES.THEOREM);
+			}, sf: true
 		}
 	},
 	curr_level: 0,
@@ -358,6 +368,33 @@ setGameContext({
 			}
 		],
 
+		CREDITS: [
+			{
+				canProceedWhen: _ => true,
+				func: _ => {
+					gameContext.activeCutscene._titleImage = new Image();
+					gameContext.activeCutscene._titleImage.src = `${assetRoot}/assets/other/title.png`;
+					gameContext.audioManager.pauseAll();
+				}
+			},
+			{
+				duration: 1000,
+				func: counter => {
+					gameContext.ctx.globalAlpha = 1;
+					gameContext.ctx.fillStyle = "black";
+					gameContext.ctx.fillRect(0, 0, gameContext.canvas.width, gameContext.canvas.height);
+					gameContext.ctx.globalAlpha = counter / 1000;
+					gameContext.ctx.drawImage(gameContext.activeCutscene._titleImage, (gameContext.canvas.width / 2) - (gameContext.activeCutscene._titleImage.width / 2), (gameContext.canvas.height / 2) - (gameContext.activeCutscene._titleImage.height / 2));
+				}
+			},
+			{
+				canProceedWhen: _ => true,
+				func: _ => {
+					gameContext.audioManager.resumeAll();
+				}
+			}
+		],
+
 		DANCE_OF_DOG: [
 			{
 				func: _ => {
@@ -393,6 +430,45 @@ setGameContext({
 				},
 				duration: 50,
 				next: -1
+			}
+		],
+
+		THEOREM: [
+			{
+				canProceedWhen: _ => true,
+				func: _ => {
+					gameContext.activeCutscene._gaggle = new Image();
+					gameContext.activeCutscene._gaggle.src = `${assetRoot}/assets/sprites/gaggle2.png`;
+					gameContext.audioManager.haltAll();
+					gameContext.audioManager.registerSound("theorem", `${assetRoot}/assets/music/theorem.mp3`, "Music", false);
+					gameContext.audioManager.playSound("theorem");
+				}
+			},
+			{
+				canProceedWhen: _ => gameContext.audioManager.soundsPlaying.filter(e => e._audioMgrName == "theorem").length == 1,
+				func: _ => { }
+			},
+			{
+				canProceedWhen: _ => gameContext.audioManager.soundsPlaying.filter(e => e._audioMgrName == "theorem").length == 0,
+				func: counter => {
+					gameContext.dbgFlags.disableBlanking = true;
+					let intensity = counter / 100;
+					let cx = (gameContext.canvas.width / 2) - (gameContext.activeCutscene._gaggle.width / 2);
+					let cy = (gameContext.canvas.height / 2) - (gameContext.activeCutscene._gaggle.height / 2);
+					gameContext.ctx.globalAlpha = 0.15;
+					gameContext.ctx.fillStyle = "white";
+					gameContext.ctx.fillRect(0, 0, gameContext.canvas.width, gameContext.canvas.height);
+					gameContext.ctx.globalAlpha = 1;
+					gameContext.ctx.drawImage(gameContext.canvas, ((Math.random() - 0.5) * intensity) - 25, ((Math.random() - 0.5) * intensity) - 25, gameContext.canvas.width + 50, gameContext.canvas.height + 50);
+					gameContext.ctx.globalAlpha = counter / 7000;
+					gameContext.ctx.drawImage(gameContext.activeCutscene._gaggle, (Math.cos(counter / 200) * counter / 1000) + cx, (Math.sin(counter / 200) * counter / 1000) + cy)
+				}
+			},
+			{
+				canProceedWhen: _ => true,
+				func: _ => {
+					gameContext.dbgFlags.disableBlanking = false;
+				}
 			}
 		]
 	}
@@ -644,7 +720,7 @@ function gameLoop(currentTime) {
 
 	while (gameContext.accumulator >= gameContext.PHYSICS_TICK_MS) {
 		gameContext.framecount++;
-		blank();
+		if (!gameContext.dbgFlags.disableBlanking) blank();
 		if (gameContext.activeCutscene) {
 			shouldRender = false;
 			if (gameContext.activeCutscene.draw) gameContext.activeCutscene.draw();
