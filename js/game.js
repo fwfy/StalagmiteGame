@@ -83,7 +83,7 @@ setGameContext({
 					gameContext.keyBinds["arrowup"].sf = false;
 					gameContext.player.y--;
 				}
-			}, sf: true
+			}, sf: true,
 		},
 		"arrowdown": {
 			fn: _ => {
