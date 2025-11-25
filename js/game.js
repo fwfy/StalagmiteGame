@@ -500,13 +500,13 @@ function endRecording() {
 }
 
 async function playRecording(input_sequence = gameContext.inputs) {
-	if(input_sequence[0]?.[0]?.[0] == "%") { // handle loading of a specific level
+	if (input_sequence[0]?.[0]?.[0] == "%") { // handle loading of a specific level
 		gameContext.player.remove();
 		let level = new Level(input_sequence.shift()[0].slice(1));
 		await new Promise((resolve) => {
 			setInterval(_ => {
-				if(level.doneLoading) resolve();
-			},100);
+				if (level.doneLoading) resolve();
+			}, 100);
 		});
 	}
 	gameContext.inputs = input_sequence;
@@ -747,7 +747,7 @@ function gameLoop(currentTime) {
 		text(0, 0, "DEBUG MODE", "red", 15, false);
 	}
 
-	for(const overlay of gameContext.overlays) {
+	for (const overlay of gameContext.overlays) {
 		overlay();
 	}
 
