@@ -1,10 +1,9 @@
 import { gameContext } from "./context.js";
-import { Logger } from "./logger.js";
+import { createLogger } from "./logger.js";
 import { text } from "./util.js";
 
-const logger = new Logger("DevConnector");
-
 export class DevConnector {
+    #log = createLogger("DevConnector");
     constructor() {
         if(gameContext._DEVCONNECTOR) throw new Error("There's already an instance of DevConnector attached!");
         gameContext._DEVCONNECTOR = true;
@@ -28,7 +27,7 @@ export class DevConnector {
         if (this.connecting) return;
         this.connecting = true;
         try {
-            logger.log(`Connecting to local DevConnector instance...`);
+            this.#log(`Connecting to local DevConnector instance...`);
             this.status("Setting up connection...");
             this.ws = new WebSocket("wss://127.0.0.1:22422");
             this.ws.addEventListener("open", this.wsOpen.bind(this));
@@ -53,7 +52,7 @@ export class DevConnector {
         }
     }
     wsOpen() {
-        logger.log(`Connection established!`);
+        this.#log(`Connection established!`);
         this.status("Connected and waiting for changes!");
     }
     async wsMessage(data) {

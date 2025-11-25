@@ -1,4 +1,4 @@
-import { Logger } from "./logger.js";
+import { createLogger } from "./logger.js";
 
 class BetterAudioBSN {
     constructor(audioContext, buffer, { loop = false } = {}) {
@@ -54,6 +54,7 @@ class BetterAudioBSN {
 }
 
 export class AudioManager {
+    #log = createLogger("AudioManager");
     constructor() {
         this.audioContext = new AudioContext();
         this.channels = {};
@@ -61,12 +62,8 @@ export class AudioManager {
         this.queuedSounds = [];
         this.soundsPlaying = [];
         this.soundsPaused = [];
-        this.logger = new Logger("AudioManager");
         this.registerChannel("Music");
         this.registerChannel("SFX");
-    }
-    log(msg) {
-        this.logger.log(msg);
     }
     registerChannel(name, defaultVolume = 0.1) {
         this.channels[name] = { 
@@ -82,7 +79,7 @@ export class AudioManager {
         channel.gainNode = this.audioContext.createGain();
         channel.gainNode.connect(this.audioContext.destination);
         channel.gainNode.gain.value = defaultVolume;
-        this.log(`Registered new channel: "${name}"`);
+        this.#log(`Registered new channel: "${name}"`);
     }
     async getAudioFromFile(filepath) {
         const response = await fetch(filepath);
@@ -100,59 +97,59 @@ export class AudioManager {
             channel,
             loop
         }
-        this.log(`Registered sound "${name}" for channel "${channel}"`);
+        this.#log(`Registered sound "${name}" for channel "${channel}"`);
         this.releaseQueuedSounds();
     }
     haltChannel(channel) {
-        this.log(`Stopping all sounds from channel "${channel}"`);
+        this.#log(`Stopping all sounds from channel "${channel}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrChannel == channel)) {
             sound.stop();
         }
     }
     haltAll() {
-        this.log(`Halting all sounds from all channels!`);
+        this.#log(`Halting all sounds from all channels!`);
         for(const channel in this.channels) {
             this.haltChannel(channel);
         }
     }
     haltInstancesOf(soundName) {
-        this.log(`Halting all instances of sound "${soundName}"`);
+        this.#log(`Halting all instances of sound "${soundName}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrName == soundName)) {
             sound.stop();
         }
     }
     pauseChannel(channel) {
-        this.log(`Pausing all sounds from channel "${channel}"`);
+        this.#log(`Pausing all sounds from channel "${channel}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrChannel == channel)) {
             sound.pause();
         }
     }
     pauseInstancesOf(soundName) {
-        this.log(`Pausing all instances of sound "${soundName}"`);
+        this.#log(`Pausing all instances of sound "${soundName}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrName == soundName)) {
             sound.pause();
         }
     }
     pauseAll() {
-        this.log(`Pausing all sounds from all channels!`);
+        this.#log(`Pausing all sounds from all channels!`);
         for(const channel in this.channels) {
             this.pauseChannel(channel);
         }
     }
     resumeAll() {
-        this.log(`Resuming all sounds from all channels!`);
+        this.#log(`Resuming all sounds from all channels!`);
         for(const channel in this.channels) {
             this.resumeChannel(channel);
         }
     }
     resumeChannel(channel) {
-        this.log(`Resuming all sounds from channel "${channel}"`);
+        this.#log(`Resuming all sounds from channel "${channel}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrChannel == channel)) {
             sound.resume();
         }
     }
     resumeInstancesOf(soundName) {
-        this.log(`Resuming all instances of sound "${soundName}"`);
+        this.#log(`Resuming all instances of sound "${soundName}"`);
         for(const sound of this.soundsPlaying.filter(e => e._audioMgrName == soundName)) {
             sound.resume();
         }
@@ -161,7 +158,7 @@ export class AudioManager {
         let stillQueued = [];
         for(const sound of this.queuedSounds) {
             if(this.sounds[sound]) {
-                this.log(`Releasing queued sound event "${sound}"`);
+                this.#log(`Releasing queued sound event "${sound}"`);
                 this.playSound(sound);
             } else {
                 stillQueued.push(sound);
@@ -172,7 +169,7 @@ export class AudioManager {
     playSound(soundName) {
         if (!this.sounds[soundName]) {
             this.queuedSounds.push(soundName);
-            return this.log(`Queued "${soundName}" for playback as it has not yet been registered.`);
+            return this.#log(`Queued "${soundName}" for playback as it has not yet been registered.`);
         }
         const sound = this.sounds[soundName];
         const trackSource = new BetterAudioBSN(this.audioContext, sound.data, { loop: sound.loop });

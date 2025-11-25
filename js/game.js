@@ -6,7 +6,9 @@ import { gameContext, setGameContext } from "./context.js";
 import { text, blank } from "./util.js";
 import { AudioManager } from "./audio.js";
 import { DevConnector } from "./devconnector.js";
+import { createLogger } from "./logger.js";
 
+const log = createLogger("game");
 const assetRoot = window.location.href.replaceAll(/\/$/g, "");
 
 setGameContext({
@@ -497,7 +499,7 @@ async function loadSounds() {
 		soundPromises.push(gameContext.audioManager.registerSound(soundName, sound.path, sound.channel, sound.loop))
 	}
 	await Promise.all(soundPromises);
-	console.log(`finished loading all sounds`);
+	log(`finished loading all sounds`);
 	gameContext.soundsLoaded = true;
 	gameContext.soundsLoading = false;
 }
@@ -690,7 +692,7 @@ function startGame() {
 gameContext.startGame = startGame;
 
 document.addEventListener("keydown", function (e) {
-	console.log(e.key);
+	log(`keydown: ${e.key}`);
 	gameContext.keysPressed.add(e.key.toLowerCase());
 });
 
